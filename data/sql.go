@@ -12,7 +12,7 @@ import (
 var embedFiles embed.FS
 var DB = getDB()
 
-func DBConnection() (*sql.DB, error) {
+func DBConnect() (*sql.DB, error) {
 	dbPath := "./data/sqlite.db"
 	if _, err := os.Stat("./data"); os.IsNotExist(err) {
 		if err = os.MkdirAll("./data", 0755); err != nil {
@@ -33,7 +33,7 @@ func DBConnection() (*sql.DB, error) {
 }
 
 func getDB() *sql.DB {
-	db, err := DBConnection()
+	db, err := DBConnect()
 	if err != nil {
 		log.Fatal(err)
 	}
