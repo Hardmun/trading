@@ -1,6 +1,10 @@
 package utils
 
-func CheckLocalTables() error {
+import "trading/data"
 
+func UpdateTables() error {
+	db := data.DB
+
+	_ = db
 	return nil
 }
