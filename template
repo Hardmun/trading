@@ -1,0 +1,183 @@
+package main
+
+import (
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"github.com/Hardmun/algoTrade/limiter"
+	_ "github.com/lib/pq"
+	"io"
+	"log"
+	"net/http"
+	"strconv"
+	"sync"
+	"time"
+)
+
+const (
+	respLimit = 500
+	//httpLimit   = 6000
+	//httpTimeout = 1000
+	symbol = "BTCUSDT"
+)
+
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "773257"
+	dbname   = "binance"
+)
+
+var (
+	startDate = time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
+	endDate   = time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)
+)
+
+func pgsqlConn() (*sql.DB, error) {
+	//connectionStr := "postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+	conn, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, err
+	}
+	err = conn.Ping()
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+var (
+	wg        sync.WaitGroup
+	semaphore chan struct{}
+)
+
+func minPeriod(v1, v2 int64) int64 {
+	if v1 < v2 {
+		return v1
+	}
+	return v2
+}
+
+func doRequest(req *http.Request, pgsql *sql.DB, l *limiter.Limiter) {
+	var (
+		read []byte
+	)
+	defer wg.Done()
+	defer func() { <-semaphore }()
+
+	l.Wait()
+
+	client := http.Client{}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+
+	defer func(Body io.ReadCloser) {
+		err = Body.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(resp.Body)
+
+	read, err = io.ReadAll(resp.Body)
+	if err != nil {
+		panic(err)
+	}
+
+	var t any
+	err = json.Unmarshal(read, &t)
+	if err != nil {
+		panic(err)
+	}
+	if status, ok := t.(map[string]interface{}); ok {
+		if code, okCode := status["code"].(float64); okCode {
+			if code != 200 {
+				panic(status["msg"].(string))
+			}
+		}
+	}
+
+	if tArray, ok := t.([]interface{}); ok {
+		for _, v := range tArray {
+			if val, ok := v.([]interface{}); ok {
+				sqlStatement :=
+					`insert into "BTSUSDT_spot_hours"(opentime, openprice, highprice, lowprice, closeprice,
+				volume, closetime, quoteassetvolume, tradesnumber, takerbaseasset, takerquoteasset, unused)
+				values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+				_, err = pgsql.Exec(sqlStatement, val...)
+				if err != nil {
+					panic(err)
+				}
+			}
+		}
+	}
+
+	_ = pgsql
+
+}
+
+func main() {
+	var (
+		err      error
+		psqlConn *sql.DB
+	)
+
+	psqlConn, err = pgsqlConn()
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		err = psqlConn.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if psqlConn.Stats().OpenConnections != 0 {
+			log.Fatalf("Unable to close database connections ... %v", psqlConn.Stats().OpenConnections)
+		}
+	}()
+
+	startTime := startDate.UnixMilli()
+	endTime := endDate.UnixMilli()
+	semaphore = make(chan struct{}, 50)
+	defer func() {
+		close(semaphore)
+	}()
+
+	oneStep := time.Minute.Milliseconds()
+	interval := "1m"
+
+	step := oneStep * respLimit
+	lmt := limiter.NewLimiter(time.Minute, 3000)
+
+	c := 1
+	for startTime < endTime {
+		nRequest, err := http.NewRequest("GET", "https://api.binance.com/api/v3/klines", nil)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		}
+		fmt.Println(c)
+		c += 1
+
+		q := nRequest.URL.Query()
+		q.Add("symbol", symbol)
+		q.Add("interval", interval)
+		q.Add("startTime", strconv.FormatInt(startTime, 10))
+		q.Add("endTime", strconv.FormatInt(minPeriod(startTime+step, endTime), 10))
+		nRequest.URL.RawQuery = q.Encode()
+
+		semaphore <- struct{}{}
+		wg.Add(1)
+
+		go doRequest(nRequest, psqlConn, lmt)
+
+		startTime += step
+	}
+	wg.Wait()
+
+}
