@@ -11,7 +11,6 @@ import (
 
 func printMe(i int) {
 	defer wg.Done()
-	settings.Limits.Wait()
 	fmt.Println(i)
 }
 
@@ -29,6 +28,7 @@ func main() {
 	}
 
 	for i := 0; i < 10; i++ {
+		settings.Limits.Wait()
 		wg.Add(1)
 		go printMe(i)
 	}
