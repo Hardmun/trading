@@ -6,15 +6,14 @@ import (
 )
 
 var (
-	Intervals = []string{
-		"1h", "4h", "1d",
+	Intervals = map[string]time.Duration{
+		//"1h": time.Hour,
+		"1d": time.Hour * 24,
 	}
 	Symbols = []string{
 		"BTCUSDT",
 	}
-	Limit     = 500
-	DateStart = time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)
-	DateEnd   = time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)
+	Step = 500
 )
 
 type Limiter struct {
@@ -25,7 +24,7 @@ type Limiter struct {
 
 //go:embed autostart.sql
 var EmbedFiles embed.FS
-var Limits = NewLimiter(2*time.Second, 4)
+var Limits = NewLimiter(2*time.Second, 2)
 
 func NewLimiter(d time.Duration, c int) *Limiter {
 	limiter := &Limiter{

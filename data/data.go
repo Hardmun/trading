@@ -42,7 +42,7 @@ func createNonExistTables(db *sql.DB) error {
 	singleQueryString := string(singleQuery)
 
 	for _, symbol := range settings.Symbols {
-		for _, interval := range settings.Intervals {
+		for interval := range settings.Intervals {
 			finalQuery.WriteString(strings.Replace(singleQueryString, "&table",
 				fmt.Sprintf("%s_%s", symbol, interval), 1))
 		}
