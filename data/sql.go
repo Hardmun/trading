@@ -10,22 +10,31 @@ import (
 
 //go:embed autostart.sql
 var embedFiles embed.FS
-var DB = dbConnection()
+var DB = getDB()
 
-func dbConnection() *sql.DB {
+func DBConnection() (*sql.DB, error) {
 	dbPath := "./data/sqlite.db"
 	if _, err := os.Stat("./data"); os.IsNotExist(err) {
 		if err = os.MkdirAll("./data", 0755); err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 	}
 
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if err = db.Ping(); err != nil {
+		return nil, err
+	}
+
+	return db, err
+}
+
+func getDB() *sql.DB {
+	db, err := DBConnection()
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -41,10 +50,3 @@ func dbConnection() *sql.DB {
 
 	return db
 }
-
-//func GetDB() *sql.DB {
-//	if err := DB.Ping(); err != nil {
-//		DB = dbConnection()
-//	}
-//	return DB
-//}
