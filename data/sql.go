@@ -42,9 +42,9 @@ func dbConnection() *sql.DB {
 	return db
 }
 
-func GetDB() *sql.DB {
-	if err := DB.Ping(); err != nil {
-		DB = dbConnection()
-	}
-	return DB
-}
+//func GetDB() *sql.DB {
+//	if err := DB.Ping(); err != nil {
+//		DB = dbConnection()
+//	}
+//	return DB
+//}
