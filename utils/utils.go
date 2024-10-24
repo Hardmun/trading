@@ -10,34 +10,42 @@ import (
 	"trading/settings"
 )
 
-var (
-	//wg = sync.WaitGroup{}
-	w = 0
-)
+type klineParams struct {
+	symbol      string
+	interval    string
+	timeStart   int64
+	timeEnd     int64
+	wg          *sync.WaitGroup
+	limiter     *settings.Limiter
+	errMessages *settings.ErrorMessages
+}
 
-func writeDataIfNotExists(symbol, interval string, startTime, endTime int64, wg *sync.WaitGroup) {
-	defer wg.Done()
+func writeDataIfNotExists(params klineParams) {
+	defer params.wg.Done()
 
 	req, err := http.NewRequest(http.MethodGet, "https://api.binance.com/api/v3/klines", nil)
 	if err != nil {
-		settings.Limits.Error <- err
+		params.errMessages.WriteError(err)
 		_ = req
 	}
-	fmt.Println(symbol)
-	if w == 2 {
-		settings.Limits.Error <- errors.New("LOL")
+
+	fmt.Println(params.symbol)
+	if params.timeStart == 1643328000000 {
+		params.errMessages.WriteError(errors.New("LOL"))
 		return
 	}
-	w++
 
 	time.Sleep(5 * time.Second)
-	fmt.Printf("%v  %v\n", time.UnixMilli(startTime).UTC(), time.UnixMilli(endTime).UTC())
+	fmt.Printf("%v  %v\n", time.UnixMilli(params.timeStart).UTC(), time.UnixMilli(params.timeEnd).UTC())
 
 }
 
-func UpdateTables() (err error) {
+func UpdateTables() error {
+	limiter := settings.NewLimiter(2*time.Second, 2)
+	wg := new(sync.WaitGroup)
+	errMessage := settings.NewErrorMessage()
+
 	minTime := time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
-	var wg = new(sync.WaitGroup)
 
 lb:
 	for _, symbol := range settings.Symbols {
@@ -47,26 +55,35 @@ lb:
 
 			for timeStart, timeEnd := currentTime-step, currentTime-int64(time.Nanosecond); timeEnd >
 				minTime; timeStart, timeEnd = timeStart-step, timeEnd-step {
-				err = settings.Limits.Wait()
-				if err != nil {
+
+				if errMessage.HasError() {
+					fmt.Printf("breaking on: %s\n", symbol)
 					break lb
 				}
+
+				limiter.Wait()
 				wg.Add(1)
-				go writeDataIfNotExists(symbol, interval, timeStart, timeEnd, wg)
+				params := klineParams{
+					symbol:      symbol,
+					interval:    interval,
+					timeStart:   timeStart,
+					timeEnd:     timeEnd,
+					wg:          wg,
+					limiter:     limiter,
+					errMessages: errMessage,
+				}
+				go writeDataIfNotExists(params)
 			}
 		}
 	}
-	for len(settings.Limits.Error) > 0 {
-		err = <-settings.Limits.Error
-	}
 	wg.Wait()
-	select {
-	case err = <-settings.Limits.Error:
-	default:
+
+	if err := errMessage.GetError(); err != nil {
+		return err
 	}
 
 	db := data.DB
 
 	_ = db
-	return
+	return nil
 }
