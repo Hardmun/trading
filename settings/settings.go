@@ -7,6 +7,7 @@ import (
 
 var (
 	Intervals = map[string]time.Duration{
+		//"1m": time.Minute,
 		//"1h": time.Hour,
 		"1d": time.Hour * 24,
 	}

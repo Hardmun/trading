@@ -7,19 +7,24 @@ import (
 	"trading/settings"
 )
 
+func writeDataIfNotExists(symbol, interval string, startTime, endTime int64) {
+
+}
+
 func UpdateTables() error {
-	minTime := time.Date(2015, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	minTime := time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
 
 	for _, symbol := range settings.Symbols {
-		for timeString, timeInt := range settings.Intervals {
-			currentTime := time.Now().Truncate(time.Hour).UnixMilli()
-			_, _ = symbol, timeString
+		for interval, timeInt := range settings.Intervals {
+			currentTime := time.Now().Truncate(timeInt).UnixMilli()
 			step := int64(timeInt) / int64(time.Millisecond) * int64(settings.Step)
-			_, _ = symbol, timeString
-			for timeStart, timeEnd := currentTime-step, currentTime; timeEnd > minTime; timeStart,
-				timeEnd = timeStart-step, timeEnd-step {
-				settings.Limits.Wait()
-				fmt.Printf("%v  %v\n", time.UnixMilli(timeStart).UTC(), time.UnixMilli(timeEnd-int64(time.Nanosecond)).UTC())
+
+			for timeStart, timeEnd := currentTime-step, currentTime-int64(time.Nanosecond); timeEnd >
+				minTime; timeStart, timeEnd = timeStart-step, timeEnd-step {
+				//settings.Limits.Wait()
+
+				writeDataIfNotExists(symbol, interval, timeStart, timeEnd)
+				fmt.Printf("%v  %v\n", time.UnixMilli(timeStart).UTC(), time.UnixMilli(timeEnd).UTC())
 			}
 		}
 

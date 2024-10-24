@@ -1,4 +1,4 @@
-https://developers.binance.com/docs/binance-spot-api-docs/rest-api#market-data-endpoints
+https://developers.binance.com/docs/binance-spot-api-docs/rest-api/public-api-endpoints
 
 Comprehensive Breakout Indicator Specification
 
