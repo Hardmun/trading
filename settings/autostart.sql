@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS &table
 (
     "opentime"
-        INTEGER
+        INTEGER PRIMARY KEY
         NOT NULL,
     "openprice"
         REAL

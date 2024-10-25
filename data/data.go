@@ -96,7 +96,11 @@ func WriteKlineData(data []interface{}) error {
 			if len(klData) == 0 {
 				return nil
 			}
-
+			query := ""
+			err := executeQuery(query, 1, 2, 3)
+			if err != nil {
+				return err
+			}
 		default:
 			return errors.New("unknown interface{} in func WriteKlineData(data []interface{})")
 		}
