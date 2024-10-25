@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
@@ -69,4 +70,36 @@ func getDB() *sql.DB {
 	}
 
 	return db
+}
+
+func executeQuery(query string, params ...any) error {
+	prep, err := DB.Prepare(query)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err = prep.Close(); err != nil {
+			fmt.Println(err.Error())
+		}
+	}()
+	_, err = prep.Exec(params...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func WriteKlineData(data []interface{}) error {
+	for _, kl := range data {
+		switch klData := kl.(type) {
+		case []interface{}:
+			if len(klData) == 0 {
+				return nil
+			}
+
+		default:
+			return errors.New("unknown interface{} in func WriteKlineData(data []interface{})")
+		}
+	}
+	return nil
 }

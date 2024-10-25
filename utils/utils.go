@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"sync"
 	"time"
+	"trading/data"
 	"trading/settings"
 )
 
@@ -57,8 +58,6 @@ func updateKlineData(params klineParams) error {
 	if err != nil {
 		return err
 	}
-
-	a := 11
 	switch val := resp.(type) {
 	case map[string]interface{}:
 		var (
@@ -74,20 +73,13 @@ func updateKlineData(params klineParams) error {
 		}
 		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, msg))
 	case []interface{}:
-		a = 2
+		err = data.WriteKlineData(val)
+		if err != nil {
+			return err
+		}
 	case interface{}:
-		a = 3
-		_ = val
+		return errors.New("unknown interface{}")
 	}
-	_ = a
-	//if code, ok := resp.(map[string]interface{})["code"]; ok {
-	//	if desc, okDesc := resp.(map[string]interface{})["msg"]; okDesc {
-	//		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, desc))
-	//	}
-	//}
-
-	//fmt.Printf("%v  %v\n", time.UnixMilli(params.timeStart).UTC(), time.UnixMilli(params.timeEnd).UTC())
-	//fmt.Printf("%v\n", resp)
 
 	return nil
 }
@@ -98,7 +90,6 @@ func UpdateTables() error {
 	errMsg := settings.NewErrorMessage()
 
 	minTime := time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
-	queryNum := 0
 lb:
 	for _, symbol := range settings.Symbols {
 		for interval, timeInt := range settings.Intervals {
@@ -108,9 +99,7 @@ lb:
 			for timeStart, timeEnd := currentTime-step, currentTime-int64(time.Nanosecond); timeEnd >
 				minTime; timeStart, timeEnd = timeStart-step, timeEnd-step {
 
-				queryNum++
 				if errMsg.HasError() {
-					fmt.Printf("queries: %v\n", queryNum)
 					break lb
 				}
 
@@ -134,7 +123,6 @@ lb:
 		}
 	}
 	wGrp.Wait()
-
 	if err := errMsg.GetError(); err != nil {
 		return err
 	}
