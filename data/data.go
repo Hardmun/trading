@@ -89,17 +89,41 @@ func executeQuery(query string, params ...any) error {
 	return nil
 }
 
-func WriteKlineData(data []interface{}) error {
+func WriteKlineData(data []interface{}, tableName string) error {
 	for _, kl := range data {
 		switch klData := kl.(type) {
 		case []interface{}:
 			if len(klData) == 0 {
 				return nil
 			}
-			query := ""
-			err := executeQuery(query, 1, 2, 3)
-			if err != nil {
-				return err
+			query := `
+			INSERT INTO BTCUSDT_1h (
+				opentime, 
+				openprice, 
+				highprice, 
+			    lowprice, 
+			    closeprice, 
+			    volume, 
+			    closetime, 
+			    quoteassetvolume, 
+				tradesnumber, 
+				takerbaseasset, 
+				takerquoteasset
+			) 
+			VALUES(
+				?,?,?,?,?,?,?,?,?,?,?
+			)                     
+			ON CONFLICT (opentime) 
+			DO NOTHING`
+
+			switch dataSlice := kl.(type) {
+			case []interface{}:
+				err := executeQuery(query, dataSlice[:11]...)
+				if err != nil {
+					return err
+				}
+			default:
+				return errors.New("unknown interface{} in func WriteKlineData(data []interface{}, tableName string)")
 			}
 		default:
 			return errors.New("unknown interface{} in func WriteKlineData(data []interface{})")
