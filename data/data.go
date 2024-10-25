@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 	"trading/settings"
 )
 
@@ -34,13 +35,8 @@ func DBConnect() (*sql.DB, error) {
 }
 
 func createNonExistTables(db *sql.DB) error {
-	singleQuery, err := settings.EmbedFiles.ReadFile("autostart.sql")
-	if err != nil {
-		return err
-	}
-
 	var finalQuery strings.Builder
-	singleQueryString := string(singleQuery)
+	singleQueryString := Queries[0]
 
 	for _, symbol := range settings.Symbols {
 		for interval := range settings.Intervals {
@@ -50,7 +46,7 @@ func createNonExistTables(db *sql.DB) error {
 	}
 
 	finalQuery.WriteString("PRAGMA journal_mode= WAL;")
-	_, err = db.Exec(finalQuery.String())
+	_, err := db.Exec(finalQuery.String())
 	if err != nil {
 		return err
 	}
@@ -89,6 +85,18 @@ func executeQuery(query string, params ...any) error {
 	return nil
 }
 
+func getQuery(query string, params ...any) (any, error) {
+	row := DB.QueryRow(query, params...)
+
+	var resp any
+	err := row.Scan(&resp)
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
+}
+
 func WriteKlineData(data []interface{}, tableName string) error {
 	for _, kl := range data {
 		switch klData := kl.(type) {
@@ -96,26 +104,8 @@ func WriteKlineData(data []interface{}, tableName string) error {
 			if len(klData) == 0 {
 				return nil
 			}
-			query := `
-			INSERT INTO BTCUSDT_1h (
-				opentime, 
-				openprice, 
-				highprice, 
-			    lowprice, 
-			    closeprice, 
-			    volume, 
-			    closetime, 
-			    quoteassetvolume, 
-				tradesnumber, 
-				takerbaseasset, 
-				takerquoteasset
-			) 
-			VALUES(
-				?,?,?,?,?,?,?,?,?,?,?
-			)                     
-			ON CONFLICT (opentime) 
-			DO NOTHING`
 
+			query := strings.Replace(Queries[1], "&tableName", tableName, 1)
 			switch dataSlice := kl.(type) {
 			case []interface{}:
 				err := executeQuery(query, dataSlice[:11]...)
@@ -130,4 +120,21 @@ func WriteKlineData(data []interface{}, tableName string) error {
 		}
 	}
 	return nil
+}
+
+func LastDate(tableName string) int64 {
+	minTime := settings.DateStart.UnixMilli()
+	query := strings.Replace(Queries[2], "&tableName", tableName, 1)
+
+	resultQuery, err := getQuery(query)
+	if err == nil {
+		switch t := resultQuery.(type) {
+		case int64:
+			return t + int64(time.Nanosecond)
+		default:
+			return minTime
+		}
+	}
+
+	return minTime
 }

@@ -1,23 +1,21 @@
 package settings
 
 import (
-	"embed"
 	"time"
 )
-
-//go:embed autostart.sql
-var EmbedFiles embed.FS
 
 var (
 	Intervals = map[string]time.Duration{
 		//"1m": time.Minute,
+		"15m": time.Minute * 15,
 		//"1h": time.Hour,
-		"1d": time.Hour * 24,
+		//"1d": time.Hour * 24,
 	}
 	Symbols = []string{
 		"BTCUSDT",
 	}
-	Step = 500
+	Step      = 500
+	DateStart = time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC)
 )
 
 type Limiter struct {

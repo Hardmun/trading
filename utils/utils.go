@@ -84,20 +84,37 @@ func updateKlineData(params klineParams) error {
 	return nil
 }
 
-func UpdateTables() error {
+func max64(a, b int64) int64 {
+	if b > a {
+		return b
+	}
+	return a
+}
+
+// UpdateTables updates the tables based on the provided update option.
+//
+//	 1  - Updates only non-existing final records.
+//	 0  - Updates all records.
+//	-1  - Updates only non-existing records for the entire period.
+func UpdateTables(updateOption int8) error {
 	limiter := settings.NewLimiter(time.Second, 50)
 	wGrp := new(sync.WaitGroup)
 	errMsg := settings.NewErrorMessage()
 
-	minTime := time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
+	var lastDate int64
+	if updateOption != 1 {
+		lastDate = settings.DateStart.UnixMilli()
+	}
 lb:
 	for _, symbol := range settings.Symbols {
 		for interval, timeInt := range settings.Intervals {
-			currentTime := time.Now().Truncate(timeInt).UnixMilli()
+			currentTime := time.Now().UTC().Truncate(timeInt).UnixMilli()
 			step := int64(timeInt) / int64(time.Millisecond) * int64(settings.Step)
-
-			for timeStart, timeEnd := currentTime-step, currentTime-int64(time.Nanosecond); timeEnd >
-				minTime; timeStart, timeEnd = timeStart-step, timeEnd-step {
+			if updateOption == 1 {
+				lastDate = data.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
+			}
+			for timeStart, timeEnd := max64(currentTime-step, lastDate), currentTime-int64(time.Nanosecond); timeEnd >
+				lastDate; timeStart, timeEnd = max64(timeStart-step, lastDate), timeEnd-step {
 
 				if errMsg.HasError() {
 					break lb

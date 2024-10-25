@@ -13,7 +13,7 @@ func main() {
 		}
 	}()
 
-	if err := utils.UpdateTables(); err != nil {
+	if err := utils.UpdateTables(-1); err != nil {
 		log.Fatal(err)
 	}
 
