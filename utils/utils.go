@@ -21,7 +21,7 @@ type klineParams struct {
 	timeEnd   int64
 }
 
-func updateKlineData(params klineParams) error {
+func getDataFromServer(params klineParams) error {
 	var (
 		req     *http.Request
 		reqResp *http.Response
@@ -73,10 +73,11 @@ func updateKlineData(params klineParams) error {
 		}
 		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, msg))
 	case []interface{}:
-		err = data.WriteKlineData(val, fmt.Sprintf("%s_%s", params.symbol, params.interval))
-		if err != nil {
-			return err
-		}
+
+		//err = data.WriteKlineData(val, fmt.Sprintf("%s_%s", params.symbol, params.interval))
+		//if err != nil {
+		//	return err
+		//}
 	case interface{}:
 		return errors.New("unknown interface{}")
 	}
@@ -131,7 +132,7 @@ lb:
 				}
 				go func(params klineParams, wg *sync.WaitGroup, errMessages *settings.ErrorMessages) {
 					defer wg.Done()
-					err := updateKlineData(params)
+					err := getDataFromServer(params)
 					if err != nil {
 						errMessages.WriteError(err)
 					}
@@ -140,6 +141,7 @@ lb:
 		}
 	}
 	wGrp.Wait()
+	errMsg.Close()
 	if err := errMsg.GetError(); err != nil {
 		return err
 	}

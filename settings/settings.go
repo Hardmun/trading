@@ -7,8 +7,8 @@ import (
 var (
 	Intervals = map[string]time.Duration{
 		//"1m": time.Minute,
-		"15m": time.Minute * 15,
-		//"1h": time.Hour,
+		//"15m": time.Minute * 15,
+		"1h": time.Hour,
 		//"1d": time.Hour * 24,
 	}
 	Symbols = []string{
@@ -78,6 +78,11 @@ func (e *ErrorMessages) HasError() bool {
 	default:
 		return false
 	}
+}
+
+func (e *ErrorMessages) Close() {
+	close(e.error)
+	close(e.IsError)
 }
 
 func NewErrorMessage() *ErrorMessages {
