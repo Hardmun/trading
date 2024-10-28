@@ -1,28 +1,29 @@
-package test
+package logs
 
 import (
 	"github.com/Hardmun/trading.git/internal/logs"
+	"sync"
 	"testing"
 )
 
 func TestNewLog(t *testing.T) {
+	var wg sync.WaitGroup
+	limiter := make(chan struct{}, 1000000)
 	l, err := logs.NewLog("ERROR")
+	defer l.Close()
 	if err != nil {
 		t.Error(err)
 	}
 	for i := 0; i < 10000000; i++ {
-		go l.Write(i)
-		//t.Run(fmt.Sprintf("logg #%v", i), func(t *testing.T) {
-		//	l.Write(i)
-		//})
+		limiter <- struct{}{}
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			defer func() {
+				<-limiter
+			}()
+			l.Write(i)
+		}(&wg)
 	}
+	wg.Wait()
 }
-
-//func BenchmarkAdd(b *testing.B) {
-//	if testing.Short() {
-//		b.Skip()
-//	}
-//	for i := 0; i > b.N; i++ {
-//		utils.Add(1, 4)
-//	}
-//}
