@@ -14,7 +14,7 @@ func TestNewLog(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 10000000; i++ {
 		limiter <- struct{}{}
 		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
