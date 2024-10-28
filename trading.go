@@ -2,18 +2,18 @@ package main
 
 import (
 	"log"
-	"trading/data"
-	"trading/utils"
+	"trading/api"
+	"trading/db"
 )
 
 func main() {
 	defer func() {
-		if err := data.DB.Close(); err != nil {
+		if err := db.DB.Close(); err != nil {
 			log.Print(err)
 		}
 	}()
 
-	if err := utils.UpdateTables(-1); err != nil {
+	if err := api.UpdateTables(-1); err != nil {
 		log.Fatal(err)
 	}
 
