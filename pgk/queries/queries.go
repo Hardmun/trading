@@ -58,8 +58,9 @@ var Queries = []string{
 	)                     
 	ON CONFLICT (opentime) 
 	DO NOTHING`,
-	//*******************************************GET MAXIMUM PERIOD FOR TABLE**************************************
-	`SELECT
-	max(closetime)
-	FROM &tableName`,
 }
+
+// MAXIMUM PERIOD FOR TABLE
+const QueryLastDay = `SELECT
+	max(closetime)
+	FROM &tableName`

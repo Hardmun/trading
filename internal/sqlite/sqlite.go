@@ -131,7 +131,7 @@ func WriteKlineData(data []interface{}, tableName string) error {
 
 func LastDate(tableName string) int64 {
 	minTime := config.DateStart.UnixMilli()
-	query := strings.Replace(queries.Queries[2], "&tableName", tableName, 1)
+	query := strings.Replace(queries.QueryLastDay, "&tableName", tableName, 1)
 
 	resultQuery, err := getQuery(query)
 	if err == nil {
