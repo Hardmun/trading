@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Hardmun/trading.git/internal/config"
+	"github.com/Hardmun/trading.git/internal/db"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
 	"time"
-	"trading/config"
-	"trading/db"
 )
 
 type klineParams struct {
@@ -92,11 +92,6 @@ func max64(a, b int64) int64 {
 	return a
 }
 
-// UpdateTables updates the tables based on the provided update option.
-//
-//	 1  - Updates only non-existing final records.
-//	 0  - Updates all records.
-//	-1  - Updates only non-existing records for the entire period.
 func UpdateTables(updateOption int8) error {
 	limiter := config.NewLimiter(time.Second, 50)
 	wGrp := new(sync.WaitGroup)

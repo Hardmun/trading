@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/Hardmun/trading.git/internal/config"
+	"github.com/Hardmun/trading.git/pgk/queries"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
 	"os"
 	"strings"
 	"time"
-	"trading/config"
-	"trading/pgk"
 )
 
 type KlineData struct {
@@ -21,9 +21,9 @@ type KlineData struct {
 var DB = getDB()
 
 func ConnectDB() (*sql.DB, error) {
-	dbPath := "./db/sqlite.db"
-	if _, err := os.Stat("./db"); os.IsNotExist(err) {
-		if err = os.MkdirAll("./db", 0755); err != nil {
+	dbPath := "./internal/db/sqlite.db"
+	if _, err := os.Stat("./internal/db"); os.IsNotExist(err) {
+		if err = os.MkdirAll("./internal/db", 0755); err != nil {
 			return nil, err
 		}
 	}
@@ -42,7 +42,7 @@ func ConnectDB() (*sql.DB, error) {
 
 func createNonExistTables(db *sql.DB) error {
 	var finalQuery strings.Builder
-	singleQueryString := pgk.Queries[0]
+	singleQueryString := queries.Queries[0]
 
 	for _, symbol := range config.Symbols {
 		for interval := range config.Intervals {
@@ -111,7 +111,7 @@ func WriteKlineData(data []interface{}, tableName string) error {
 				return nil
 			}
 
-			query := strings.Replace(pgk.Queries[1], "&tableName", tableName, 1)
+			query := strings.Replace(queries.Queries[1], "&tableName", tableName, 1)
 			switch dataSlice := kl.(type) {
 			case []interface{}:
 				err := executeQuery(query, dataSlice[:11]...)
@@ -130,7 +130,7 @@ func WriteKlineData(data []interface{}, tableName string) error {
 
 func LastDate(tableName string) int64 {
 	minTime := config.DateStart.UnixMilli()
-	query := strings.Replace(pgk.Queries[2], "&tableName", tableName, 1)
+	query := strings.Replace(queries.Queries[2], "&tableName", tableName, 1)
 
 	resultQuery, err := getQuery(query)
 	if err == nil {

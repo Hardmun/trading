@@ -1,4 +1,5 @@
-/data/sqlite.db
+/bin
 /go_build_trading_go.exe
-/data/sqlite.db-shm
-/data/sqlite.db-wal
+/internal/db/sqlite.db
+/internal/db/sqlite.db-shm
+/internal/db/sqlite.db-wal

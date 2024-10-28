@@ -1,4 +1,4 @@
-package pgk
+package queries
 
 var Queries = []string{
 	//*******************************************CREATE TABLES*******************************************
