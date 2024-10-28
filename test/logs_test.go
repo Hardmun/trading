@@ -1,9 +1,9 @@
 package test
 
 import (
-	"github.com/Hardmun/trading.git/internal/logs"
 	"sync"
 	"testing"
+	"trading/internal/logs"
 )
 
 func TestNewLog(t *testing.T) {

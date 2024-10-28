@@ -1,4 +1,4 @@
-module github.com/Hardmun/trading.git
+module trading
 
 go 1.23.1
 

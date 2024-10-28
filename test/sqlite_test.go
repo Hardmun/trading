@@ -2,8 +2,8 @@ package test
 
 import (
 	"database/sql"
-	"github.com/Hardmun/trading.git/internal/sqlite"
 	"testing"
+	"trading/internal/sqlite"
 )
 
 func TestGetDb(t *testing.T) {

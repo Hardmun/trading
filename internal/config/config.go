@@ -14,40 +14,10 @@ var (
 	Symbols = []string{
 		"BTCUSDT",
 	}
-	Step      = 500
 	DateStart = time.Date(2010, 1, 1, 0, 0, 0, 0, time.UTC)
 )
 
-type Limiter struct {
-	countLimit int
-	count      int
-	ticker     *time.Ticker
-	Error      chan error
-}
-
-func (l *Limiter) Wait() {
-	select {
-	case <-l.ticker.C:
-		l.count = l.countLimit
-	default:
-	}
-
-	if l.count <= 0 {
-		<-l.ticker.C
-		l.count = l.countLimit
-	}
-	l.count--
-}
-
-func NewLimiter(d time.Duration, c int) *Limiter {
-	limiter := &Limiter{
-		countLimit: c,
-		count:      c,
-		ticker:     time.NewTicker(d),
-		Error:      make(chan error, 1),
-	}
-	return limiter
-}
+const Step = 500
 
 type ErrorMessages struct {
 	error   chan error

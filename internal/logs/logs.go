@@ -2,11 +2,11 @@ package logs
 
 import (
 	"fmt"
-	"github.com/Hardmun/trading.git/internal/utils"
 	"log"
 	"os"
 	"path/filepath"
 	"sync"
+	"trading/internal/utils"
 )
 
 var (

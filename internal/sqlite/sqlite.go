@@ -4,12 +4,12 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/Hardmun/trading.git/internal/config"
-	"github.com/Hardmun/trading.git/pgk/queries"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
 	"time"
+	"trading/internal/config"
+	"trading/pgk/queries"
 )
 
 type KlineData struct {
@@ -20,9 +20,9 @@ type KlineData struct {
 var db *sql.DB
 
 func dbConnection() (*sql.DB, error) {
-	dbPath := "./internal/sqlite/data/sqlite.db"
-	if _, err := os.Stat("./internal/sqlite/data"); os.IsNotExist(err) {
-		if err = os.MkdirAll("./internal/sqlite/data", 0755); err != nil {
+	dbPath := "./db/sqlite.db"
+	if _, err := os.Stat("./db"); os.IsNotExist(err) {
+		if err = os.MkdirAll("./db", 0755); err != nil {
 			return nil, err
 		}
 	}

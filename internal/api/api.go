@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Hardmun/trading.git/internal/config"
-	"github.com/Hardmun/trading.git/internal/sqlite"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
 	"time"
+	"trading/internal/config"
+	"trading/internal/sqlite"
+	"trading/internal/utils"
 )
 
 type klineParams struct {
@@ -93,7 +94,7 @@ func max64(a, b int64) int64 {
 }
 
 func UpdateTables(updateOption int8) error {
-	limiter := config.NewLimiter(time.Second, 50)
+	limiter := utils.NewLimiter(time.Second, 50)
 	wGrp := new(sync.WaitGroup)
 	errMsg := config.NewErrorMessage()
 
