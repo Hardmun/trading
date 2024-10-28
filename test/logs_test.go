@@ -1,4 +1,4 @@
-package logs
+package test
 
 import (
 	"github.com/Hardmun/trading.git/internal/logs"

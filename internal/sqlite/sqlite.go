@@ -66,7 +66,10 @@ func GetDb() (*sql.DB, error) {
 	}
 
 	if err = db.Ping(); err != nil {
-		return nil, err
+		db, err = dbConnection()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return db, nil
