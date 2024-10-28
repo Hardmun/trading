@@ -1,4 +1,4 @@
-package db
+package sqlite
 
 import (
 	"database/sql"
@@ -21,9 +21,9 @@ type KlineData struct {
 var DB = getDB()
 
 func ConnectDB() (*sql.DB, error) {
-	dbPath := "./internal/db/sqlite.db"
-	if _, err := os.Stat("./internal/db"); os.IsNotExist(err) {
-		if err = os.MkdirAll("./internal/db", 0755); err != nil {
+	dbPath := "./internal/sqlite/data/sqlite.db"
+	if _, err := os.Stat("./internal/sqlite/data"); os.IsNotExist(err) {
+		if err = os.MkdirAll("./internal/sqlite/data", 0755); err != nil {
 			return nil, err
 		}
 	}

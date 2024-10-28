@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Hardmun/trading.git/internal/config"
-	"github.com/Hardmun/trading.git/internal/db"
+	"github.com/Hardmun/trading.git/internal/sqlite"
 	"io"
 	"net/http"
 	"net/url"
@@ -74,7 +74,7 @@ func requestData(params klineParams) error {
 		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, msg))
 	case []interface{}:
 
-		err = db.WriteKlineData(val, fmt.Sprintf("%s_%s", params.symbol, params.interval))
+		err = sqlite.WriteKlineData(val, fmt.Sprintf("%s_%s", params.symbol, params.interval))
 		if err != nil {
 			return err
 		}
@@ -107,7 +107,7 @@ lb:
 			currentTime := time.Now().UTC().Truncate(timeInt).UnixMilli()
 			step := int64(timeInt) / int64(time.Millisecond) * int64(config.Step)
 			if updateOption == 1 {
-				lastDate = db.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
+				lastDate = sqlite.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
 			}
 			for timeStart, timeEnd := max64(currentTime-step, lastDate), currentTime-int64(time.Nanosecond); timeEnd >
 				lastDate; timeStart, timeEnd = max64(timeStart-step, lastDate), timeEnd-step {

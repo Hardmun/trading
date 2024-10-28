@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/Hardmun/trading.git/internal/api"
-	"github.com/Hardmun/trading.git/internal/db"
+	"github.com/Hardmun/trading.git/internal/sqlite"
 	"log"
 )
 
@@ -65,7 +65,7 @@ import (
 func main() {
 
 	defer func() {
-		if err := db.DB.Close(); err != nil {
+		if err := sqlite.DB.Close(); err != nil {
 			log.Print(err)
 		}
 	}()
