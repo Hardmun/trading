@@ -16,5 +16,5 @@ func main() {
 	if err := api.UpdateTables(-1); err != nil {
 		log.Fatal(err)
 	}
-
+	//ITS TEST
 }
