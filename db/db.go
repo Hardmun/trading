@@ -141,6 +141,6 @@ func LastDate(tableName string) int64 {
 			return minTime
 		}
 	}
-
+	//ITS TEST
 	return minTime
 }
