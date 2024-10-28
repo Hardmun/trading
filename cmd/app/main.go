@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/Hardmun/trading.git/internal/logs"
+	"github.com/Hardmun/trading.git/internal/sqlite"
 	"log"
 )
 
@@ -68,7 +69,16 @@ func main() {
 	}
 	defer errLog.Close()
 
-	errLog.Write("Its a first write")
+	db, errDb := sqlite.GetDb()
+	if errDb != nil {
+		errLog.Fatal(errDb)
+	}
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			errLog.Write(err)
+		}
+	}()
 
 	//defer func() {
 	//	if err := sqlite.DB.Close(); err != nil {

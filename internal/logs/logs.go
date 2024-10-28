@@ -16,6 +16,7 @@ var (
 
 type Logger interface {
 	Write(errMsg ...any)
+	Fatal(errMsg ...any)
 	Close()
 }
 
@@ -27,6 +28,11 @@ type LogStruct struct {
 func (l *LogStruct) Write(errMsg ...any) {
 	newLine := log.New(l.logFile, fmt.Sprintf("[%s]", l.logType), log.LstdFlags)
 	newLine.Println(errMsg...)
+}
+
+func (l *LogStruct) Fatal(errMsg ...any) {
+	l.Write(errMsg...)
+	log.Fatal(errMsg...)
 }
 
 func (l *LogStruct) Close() {

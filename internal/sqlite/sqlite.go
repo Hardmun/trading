@@ -7,7 +7,6 @@ import (
 	"github.com/Hardmun/trading.git/internal/config"
 	"github.com/Hardmun/trading.git/pgk/queries"
 	_ "github.com/mattn/go-sqlite3"
-	"log"
 	"os"
 	"strings"
 	"time"
@@ -18,9 +17,9 @@ type KlineData struct {
 	tableName string
 }
 
-var DB = getDB()
+var db *sql.DB
 
-func ConnectDB() (*sql.DB, error) {
+func dbConnection() (*sql.DB, error) {
 	dbPath := "./internal/sqlite/data/sqlite.db"
 	if _, err := os.Stat("./internal/sqlite/data"); os.IsNotExist(err) {
 		if err = os.MkdirAll("./internal/sqlite/data", 0755); err != nil {
@@ -28,12 +27,9 @@ func ConnectDB() (*sql.DB, error) {
 		}
 	}
 
-	db, err := sql.Open("sqlite3", dbPath)
+	var err error
+	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
-		return nil, err
-	}
-
-	if err = db.Ping(); err != nil {
 		return nil, err
 	}
 
@@ -60,22 +56,24 @@ func createNonExistTables(db *sql.DB) error {
 	return nil
 }
 
-func getDB() *sql.DB {
-	db, err := ConnectDB()
-	if err != nil {
-		log.Fatal(err)
+func GetDb() (*sql.DB, error) {
+	var err error
+	if db == nil {
+		db, err = dbConnection()
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	err = createNonExistTables(db)
-	if err != nil {
-		log.Fatal(err)
+	if err = db.Ping(); err != nil {
+		return nil, err
 	}
 
-	return db
+	return db, nil
 }
 
 func executeQuery(query string, params ...any) error {
-	prep, err := DB.Prepare(query)
+	prep, err := db.Prepare(query)
 	if err != nil {
 		return err
 	}
@@ -92,7 +90,7 @@ func executeQuery(query string, params ...any) error {
 }
 
 func getQuery(query string, params ...any) (any, error) {
-	row := DB.QueryRow(query, params...)
+	row := db.QueryRow(query, params...)
 
 	var resp any
 	err := row.Scan(&resp)
@@ -141,6 +139,6 @@ func LastDate(tableName string) int64 {
 			return minTime
 		}
 	}
-	//ITS TEST
+
 	return minTime
 }
