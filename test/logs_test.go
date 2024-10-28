@@ -9,7 +9,7 @@ import (
 func TestNewLog(t *testing.T) {
 	var wg sync.WaitGroup
 	limiter := make(chan struct{}, 1000000)
-	l, err := logs.NewLog("ERROR")
+	l, err := logs.GetErrorLog()
 	defer l.Close()
 	if err != nil {
 		t.Error(err)

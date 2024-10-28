@@ -62,7 +62,7 @@ import (
 //}
 
 func main() {
-	errLog, err := logs.NewLog("ERROR")
+	errLog, err := logs.GetErrorLog()
 	if err != nil {
 		log.Fatal(err)
 	}

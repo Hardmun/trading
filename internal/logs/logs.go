@@ -6,7 +6,18 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 )
+
+var (
+	onceErrorLogger     sync.Once
+	ErrorLoggerInstance Logger
+)
+
+type Logger interface {
+	Write(errMsg ...any)
+	Close()
+}
 
 type LogStruct struct {
 	logType string
@@ -25,13 +36,16 @@ func (l *LogStruct) Close() {
 	}
 }
 
-func NewLog(logType string) (*LogStruct, error) {
+func newLog(logType string) (Logger, error) {
 	logDir, err := utils.DirPath("logs")
 	if err != nil {
 		return nil, err
 	}
 
 	filename := "error.log"
+	if logType == "INFO" {
+		filename = "info.log"
+	}
 
 	var lFile *os.File
 	lFile, err = os.OpenFile(filepath.Join(logDir, filename), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
@@ -43,4 +57,16 @@ func NewLog(logType string) (*LogStruct, error) {
 		logType: logType,
 		logFile: lFile,
 	}, nil
+}
+
+func GetErrorLog() (Logger, error) {
+	var err error
+	onceErrorLogger.Do(func() {
+		ErrorLoggerInstance, err = newLog("ERROR")
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return ErrorLoggerInstance, nil
 }
