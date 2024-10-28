@@ -1,3 +1,4 @@
+.idea
 /bin
 /go_build_trading_go.exe
 /internal/sqlite/data/sqlite.db

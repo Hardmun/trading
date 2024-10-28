@@ -63,6 +63,7 @@ import (
 //}
 
 func main() {
+	//errLog := GetLog
 
 	defer func() {
 		if err := sqlite.DB.Close(); err != nil {
@@ -73,5 +74,4 @@ func main() {
 	if err := api.UpdateTables(-1); err != nil {
 		log.Fatal(err)
 	}
-	//ITS TEST
 }
