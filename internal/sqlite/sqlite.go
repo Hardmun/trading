@@ -17,7 +17,13 @@ type KlineData struct {
 	tableName string
 }
 
+type MessageDataType struct {
+	data      []any
+	tableName string
+}
+
 var db *sql.DB
+var MessageChan chan MessageDataType
 
 func dbConnection() (*sql.DB, error) {
 	dbPath := "./db/sqlite.db"
@@ -34,26 +40,6 @@ func dbConnection() (*sql.DB, error) {
 	}
 
 	return db, err
-}
-
-func createNonExistTables(db *sql.DB) error {
-	var finalQuery strings.Builder
-	singleQueryString := queries.Queries[0]
-
-	for _, symbol := range config.Symbols {
-		for interval := range config.Intervals {
-			finalQuery.WriteString(strings.Replace(singleQueryString, "&table",
-				fmt.Sprintf("%s_%s", symbol, interval), 1))
-		}
-	}
-
-	finalQuery.WriteString("PRAGMA journal_mode= WAL;")
-	_, err := db.Exec(finalQuery.String())
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func GetDb() (*sql.DB, error) {
@@ -75,7 +61,27 @@ func GetDb() (*sql.DB, error) {
 	return db, nil
 }
 
-func executeQuery(query string, params ...any) error {
+func UpdateDatabaseTables() error {
+	var finalQuery strings.Builder
+	singleQueryString := queries.CreateTables
+
+	for _, symbol := range config.Symbols {
+		for interval := range config.Intervals {
+			finalQuery.WriteString(strings.Replace(singleQueryString, "&table",
+				fmt.Sprintf("%s_%s", symbol, interval), 1))
+		}
+	}
+
+	finalQuery.WriteString("PRAGMA journal_mode= WAL;")
+	err := execQuery(finalQuery.String())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func execQuery(query string, params ...any) error {
 	prep, err := db.Prepare(query)
 	if err != nil {
 		return err
@@ -92,7 +98,7 @@ func executeQuery(query string, params ...any) error {
 	return nil
 }
 
-func getQuery(query string, params ...any) (any, error) {
+func fetchData(query string, params ...any) (any, error) {
 	row := db.QueryRow(query, params...)
 
 	var resp any
@@ -112,10 +118,10 @@ func WriteKlineData(data []interface{}, tableName string) error {
 				return nil
 			}
 
-			query := strings.Replace(queries.Queries[1], "&tableName", tableName, 1)
+			query := strings.Replace(queries.InsertTradingData, "&tableName", tableName, 1)
 			switch dataSlice := kl.(type) {
 			case []interface{}:
-				err := executeQuery(query, dataSlice[:11]...)
+				err := execQuery(query, dataSlice[:11]...)
 				if err != nil {
 					return err
 				}
@@ -133,7 +139,7 @@ func LastDate(tableName string) int64 {
 	minTime := config.DateStart.UnixMilli()
 	query := strings.Replace(queries.QueryLastDay, "&tableName", tableName, 1)
 
-	resultQuery, err := getQuery(query)
+	resultQuery, err := fetchData(query)
 	if err == nil {
 		switch t := resultQuery.(type) {
 		case int64:
@@ -144,4 +150,11 @@ func LastDate(tableName string) int64 {
 	}
 
 	return minTime
+}
+
+func backgroundDBWriter() {
+	MessageChan = make(chan MessageDataType, 50)
+	for msg := range MessageChan {
+		_ = msg
+	}
 }

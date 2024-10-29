@@ -18,7 +18,7 @@ import (
 //	 1  - Updates only non-existing final records.
 //	 0  - Updates all records.
 //	-1  - Updates only non-existing records for the entire period.
-func UpdateTradingTables(updateOption int8) {
+func UpdateTradingTablesData(updateOption int8) {
 	var wGrp sync.WaitGroup
 
 	limiter := utils.NewLimiter(time.Second, 50)
@@ -75,12 +75,14 @@ lb:
 }
 
 func main() {
+	//1. Log initialization
 	errLog, err := logs.GetErrorLog()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer errLog.Close()
 
+	//2. DB initialization
 	db, errDb := sqlite.GetDb()
 	if errDb != nil {
 		errLog.Fatal(errDb)
@@ -92,5 +94,12 @@ func main() {
 		}
 	}()
 
-	UpdateTradingTables(-1)
+	//3. DB tables updates
+	err = sqlite.UpdateDatabaseTables()
+	if err != nil {
+		errLog.Fatal()
+	}
+
+	//4. Uploading new trading data
+	UpdateTradingTablesData(-1)
 }

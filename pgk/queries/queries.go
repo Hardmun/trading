@@ -1,8 +1,8 @@
 package queries
 
-var Queries = []string{
-	//*******************************************CREATE TABLES*******************************************
-	`CREATE TABLE IF NOT EXISTS &table
+// *******************************************CREATE TABLES*******************************************
+const CreateTables = `
+	CREATE TABLE IF NOT EXISTS &table
 (
 	"opentime"
 	INTEGER PRIMARY KEY
@@ -37,9 +37,9 @@ var Queries = []string{
 	"takerquoteasset"
 	REAL
 	NOT NULL
-);`,
-	//*******************************************FILL TRADING TABLES*******************************************
-	`
+);`
+
+const InsertTradingData = `
 	INSERT INTO &tableName (
 		opentime, 
 		openprice, 
@@ -57,10 +57,10 @@ var Queries = []string{
 		?,?,?,?,?,?,?,?,?,?,?
 	)                     
 	ON CONFLICT (opentime) 
-	DO NOTHING`,
-}
+	DO NOTHING`
 
 // MAXIMUM PERIOD FOR TABLE
-const QueryLastDay = `SELECT
+const QueryLastDay = `
+	SELECT
 	max(closetime)
 	FROM &tableName`

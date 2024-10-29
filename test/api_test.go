@@ -8,7 +8,7 @@ import (
 )
 
 func TestRequestKlineData(t *testing.T) {
-	for _, v := range cases.CasesKline {
+	for _, v := range cases.Kline {
 		t.Run(strconv.FormatInt(v.TimeStart, 10), func(t *testing.T) {
 			err := api.RequestKlineData(v)
 			if err != nil {
@@ -24,7 +24,7 @@ func BenchmarkRequestKlineData(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		for _, v := range cases.CasesKline {
+		for _, v := range cases.Kline {
 			err := api.RequestKlineData(v)
 			if err != nil {
 				b.Error(err)
