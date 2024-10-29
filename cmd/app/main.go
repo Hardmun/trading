@@ -1,74 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"sync"
-	"time"
-	"trading/internal/config"
 	"trading/internal/logs"
 	"trading/internal/sqlite"
 	"trading/internal/utils"
 )
-
-// UpdateTables updates the tables based on the provided update option.
-//
-//	 1  - Updates only non-existing final records.
-//	 0  - Updates all records.
-//	-1  - Updates only non-existing records for the entire period.
-func updateTradingTables(updateOption int8) error {
-	var wGrp sync.WaitGroup
-
-	limiter := utils.NewLimiter(time.Second, 50)
-
-	//	errMsg := config.NewErrorMessage()
-	//
-	var lastDate int64
-	if updateOption != 1 {
-		lastDate = config.DateStart.UnixMilli()
-	}
-	//lb:
-	for _, symbol := range config.Symbols {
-		for interval, timeInt := range config.Intervals {
-			currentTime := time.Now().UTC().Truncate(timeInt).UnixMilli()
-			step := int64(timeInt) / int64(time.Millisecond) * int64(config.Step)
-			if updateOption == 1 {
-				lastDate = sqlite.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
-			}
-			for timeStart, timeEnd := utils.Max64(currentTime-step, lastDate),
-				currentTime-int64(time.Nanosecond); timeEnd > lastDate; timeStart, timeEnd =
-				utils.Max64(timeStart-step, lastDate), timeEnd-step {
-				//
-				//				if errMsg.HasError() {
-				//					break lb
-				//				}
-				//
-				limiter.Wait()
-				wGrp.Add(1)
-				//
-				//				klParams := klineParams{
-				//					symbol:    symbol,
-				//					interval:  interval,
-				//					timeStart: timeStart,
-				//					timeEnd:   timeEnd,
-				//				}
-				//				go func(params klineParams, wg *sync.WaitGroup, errMessages *config.ErrorMessages) {
-				//					defer wg.Done()
-				//					err := requestData(params)
-				//					if err != nil {
-				//						errMessages.WriteError(err)
-				//					}
-				//				}(klParams, wGrp, errMsg)
-			}
-		}
-	}
-	//	wGrp.Wait()
-	//	errMsg.Close()
-	//	if err := errMsg.GetError(); err != nil {
-	//		return err
-	//	}
-	return nil
-}
 
 func main() {
 	errLog, err := logs.GetErrorLog()
@@ -88,7 +25,5 @@ func main() {
 		}
 	}()
 
-	if err = updateTradingTables(-1); err != nil {
-		errLog.Fatal(err)
-	}
+	utils.UpdateTradingTables(-1)
 }
