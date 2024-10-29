@@ -1,22 +1,23 @@
 package utils
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
-	"trading/internal/api"
-	"trading/internal/config"
-	"trading/internal/sqlite"
 )
 
-type errorMessages struct {
+type ErrorMessages struct {
 	error   chan error
 	isError chan struct{}
 }
 
-func (e *errorMessages) writeError(err error) {
+var (
+	errorMessage     *ErrorMessages
+	onceErrorMessage sync.Once
+)
+
+func (e *ErrorMessages) WriteError(err error) {
 	select {
 	case e.error <- err:
 		e.isError <- struct{}{}
@@ -24,7 +25,7 @@ func (e *errorMessages) writeError(err error) {
 	}
 }
 
-func (e *errorMessages) getError() error {
+func (e *ErrorMessages) GetError() error {
 	select {
 	case err := <-e.error:
 		return err
@@ -33,7 +34,7 @@ func (e *errorMessages) getError() error {
 	}
 }
 
-func (e *errorMessages) hasError() bool {
+func (e *ErrorMessages) HasError() bool {
 	select {
 	case <-e.isError:
 		return true
@@ -42,26 +43,33 @@ func (e *errorMessages) hasError() bool {
 	}
 }
 
-func (e *errorMessages) close() {
+func (e *ErrorMessages) Close() {
 	close(e.error)
 	close(e.isError)
 }
 
-func newErrorMessage() *errorMessages {
-	return &errorMessages{
+func NewErrorMessage() *ErrorMessages {
+	return &ErrorMessages{
 		error:   make(chan error, 1),
 		isError: make(chan struct{}, 1),
 	}
 }
 
-type limit struct {
+func GetErrorMessage() *ErrorMessages {
+	onceErrorMessage.Do(func() {
+		errorMessage = NewErrorMessage()
+	})
+
+	return errorMessage
+}
+
+type Limit struct {
 	countLimit int
 	count      int
 	ticker     *time.Ticker
-	Error      chan error
 }
 
-func (l *limit) Wait() {
+func (l *Limit) Wait() {
 	select {
 	case <-l.ticker.C:
 		l.count = l.countLimit
@@ -75,12 +83,11 @@ func (l *limit) Wait() {
 	l.count--
 }
 
-func newLimiter(d time.Duration, c int) *limit {
-	l := &limit{
+func NewLimiter(d time.Duration, c int) *Limit {
+	l := &Limit{
 		countLimit: c,
 		count:      c,
 		ticker:     time.NewTicker(d),
-		Error:      make(chan error, 1),
 	}
 	return l
 }
@@ -100,65 +107,4 @@ func Max64(a, b int64) int64 {
 		return b
 	}
 	return a
-}
-
-// UpdateTradingTables UpdateTables updates the tables based on the provided update option.
-//
-//	 1  - Updates only non-existing final records.
-//	 0  - Updates all records.
-//	-1  - Updates only non-existing records for the entire period.
-func UpdateTradingTables(updateOption int8) {
-	var wGrp sync.WaitGroup
-
-	limiter := newLimiter(time.Second, 50)
-	errMsg := newErrorMessage()
-
-	var lastDate int64
-	if updateOption != 1 {
-		lastDate = config.DateStart.UnixMilli()
-	}
-
-lb:
-	for _, symbol := range config.Symbols {
-		for interval, timeInt := range config.Intervals {
-			currentTime := time.Now().UTC().Truncate(timeInt).UnixMilli()
-			step := int64(timeInt) / int64(time.Millisecond) * int64(config.Step)
-
-			if updateOption == 1 {
-				lastDate = sqlite.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
-			}
-			for timeStart, timeEnd := Max64(currentTime-step, lastDate),
-				currentTime-int64(time.Nanosecond); timeEnd > lastDate; timeStart, timeEnd =
-				Max64(timeStart-step, lastDate), timeEnd-step {
-
-				if errMsg.hasError() {
-					break lb
-				}
-
-				limiter.Wait()
-				wGrp.Add(1)
-
-				klParams := api.KlineParams{
-					Symbol:    symbol,
-					Interval:  interval,
-					TimeStart: timeStart,
-					TimeEnd:   timeEnd,
-				}
-				go func(params api.KlineParams, wg *sync.WaitGroup, eMessage *errorMessages) {
-					defer wg.Done()
-					err := api.RequestKlineData(params)
-					if err != nil {
-						eMessage.writeError(err)
-					}
-				}(klParams, &wGrp, errMsg)
-			}
-		}
-	}
-	wGrp.Wait()
-	errMsg.close()
-
-	if err := errMsg.getError(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
 }
