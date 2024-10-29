@@ -1,4 +1,4 @@
-.idea
+/.idea
 /bin
 /go_build_trading_go.exe
 /db/sqlite.db

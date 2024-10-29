@@ -68,7 +68,7 @@ func newLog(logType string) (Logger, error) {
 func GetErrorLog() (Logger, error) {
 	var err error
 	onceErrorLogger.Do(func() {
-		ErrorLoggerInstance, err = newLog("ERROR")
+		ErrorLoggerInstance, err = newLog("ERR")
 	})
 	if err != nil {
 		return nil, err
