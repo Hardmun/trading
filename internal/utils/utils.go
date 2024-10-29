@@ -110,7 +110,7 @@ func Max64(a, b int64) int64 {
 func UpdateTradingTables(updateOption int8) {
 	var wGrp sync.WaitGroup
 
-	limiter := newLimiter(time.Second*5, 50)
+	limiter := newLimiter(time.Second, 50)
 	errMsg := newErrorMessage()
 
 	var lastDate int64
