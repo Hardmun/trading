@@ -84,7 +84,6 @@ func RequestKlineData(params KlineParams) error {
 				if len(klData) == 0 {
 					return nil
 				}
-
 				switch dataSlice := kl.(type) {
 				case []interface{}:
 					var dbParams = sqlite.MessageDataType{
@@ -94,11 +93,6 @@ func RequestKlineData(params KlineParams) error {
 					}
 					wg.Add(1)
 					sqlite.MessageChan <- dbParams
-
-					//err = execQuery(query, dataSlice[:11]...)
-					//if err != nil {
-					//	return err
-					//}
 				default:
 					return errors.New("unknown interface{} in func RequestKlineData(params KlineParams)")
 				}
