@@ -26,6 +26,7 @@ var Record = []any{
 	"2255.59685000",
 	"112059089.48321300",
 }
+var GroupedRecords [][][]any
 
 // Batch writing
 func BatchWriting(step int, startDate int64) {
@@ -137,4 +138,58 @@ func TestSyncWriting(t *testing.T) {
 		}
 	})
 
+}
+
+// groped by [500]slices
+func GetGroupedRecords() [][][]any {
+	var grp [][][]any
+
+	startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
+	startTime := startDate.UnixMilli()
+	endTime := startDate.AddDate(1, 0, 0).UnixMilli()
+
+	step := config.Step
+	var arrayStep = make([][]any, step)
+
+	for s, g := 0, 0; startTime < endTime; startTime, s = startTime+int64(time.Second/time.Millisecond), s+1 {
+		if s >= step-1 {
+			s = 0
+			g++
+			if g > 200 {
+				break
+			}
+			grp = append(grp, arrayStep)
+			arrayStep = make([][]any, step)
+		}
+		newStartTime := startTime
+		NewRecord := append([]any{}, Record...)
+		NewRecord[0] = newStartTime
+		arrayStep[s] = NewRecord
+	}
+	return grp
+}
+
+func TestTestGrouped(t *testing.T) {
+	errMessage = utils.GetErrorMessage()
+	t.Run("DB connection and table updating", func(t *testing.T) {
+		var err error
+		_, err = sqlite.GetDb()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = sqlite.UpdateDatabaseTables()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	GroupedRecords = GetGroupedRecords()
+
+	//t.Run("Writing messages to database", func(t *testing.T) {
+	//	var err error
+	//	err = PrepareBatchWriting()
+	//	if err != nil {
+	//		t.Fatal(err)
+	//	}
+	//})
 }
