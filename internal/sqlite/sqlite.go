@@ -75,7 +75,7 @@ func UpdateDatabaseTables() error {
 	}
 
 	finalQuery.WriteString("PRAGMA journal_mode= WAL;")
-	err := execQuery(finalQuery.String())
+	err := ExecQuery(finalQuery.String())
 	if err != nil {
 		return err
 	}
@@ -85,12 +85,12 @@ func UpdateDatabaseTables() error {
 func execQueryConcurrent(query string, wg *sync.WaitGroup, params ...any) {
 	defer wg.Done()
 
-	if err := execQuery(query, params...); err != nil {
+	if err := ExecQuery(query, params...); err != nil {
 		utils.GetErrorMessage().WriteError(err)
 	}
 }
 
-func execQuery(query string, params ...any) error {
+func ExecQuery(query string, params ...any) error {
 	prep, err := db.Prepare(query)
 	if err != nil {
 		return err
