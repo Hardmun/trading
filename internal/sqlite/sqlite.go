@@ -158,6 +158,6 @@ func BackgroundDBWriter() {
 	MessageChan = make(chan MessageDataType, 50)
 	for msg := range MessageChan {
 		msg.Wg.Done()
-		//utils.GetErrorMessage().WriteError(errors.New("it error again"))
+		////utils.GetErrorMessage().WriteError(errors.New("it error again"))
 	}
 }
