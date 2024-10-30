@@ -193,7 +193,7 @@ func TestTestGrouped(t *testing.T) {
 	})
 
 	groupedRecords := GetGroupedRecords()
-	lmt := utils.NewLimiter(time.Second, 50)
+	//lmt := utils.NewLimiter(time.Second, 50)
 
 	t.Run("Writing messages to database", func(t *testing.T) {
 		var wgrp sync.WaitGroup
@@ -201,7 +201,7 @@ func TestTestGrouped(t *testing.T) {
 			if errMessage.HasError() {
 				break
 			}
-			lmt.Wait()
+			//lmt.Wait()
 			wgrp.Add(1)
 			go func(v [][]any, wg *sync.WaitGroup) {
 				defer wg.Done()
