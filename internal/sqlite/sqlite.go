@@ -2,7 +2,6 @@ package sqlite
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"sync"
 	"time"
 	"trading/internal/config"
+	"trading/internal/utils"
 	"trading/pgk/queries"
 )
 
@@ -82,6 +82,13 @@ func UpdateDatabaseTables() error {
 
 	return nil
 }
+func execQueryConcurrent(query string, wg *sync.WaitGroup, params ...any) {
+	defer wg.Done()
+
+	if err := execQuery(query, params...); err != nil {
+		utils.GetErrorMessage().WriteError(err)
+	}
+}
 
 func execQuery(query string, params ...any) error {
 	prep, err := db.Prepare(query)
@@ -112,31 +119,6 @@ func fetchData(query string, params ...any) (any, error) {
 	return resp, nil
 }
 
-func WriteKlineData(data []interface{}, tableName string) error {
-	for _, kl := range data {
-		switch klData := kl.(type) {
-		case []interface{}:
-			if len(klData) == 0 {
-				return nil
-			}
-
-			query := strings.Replace(queries.InsertTradingData, "&tableName", tableName, 1)
-			switch dataSlice := kl.(type) {
-			case []interface{}:
-				err := execQuery(query, dataSlice[:11]...)
-				if err != nil {
-					return err
-				}
-			default:
-				return errors.New("unknown interface{} in func WriteKlineData(data []interface{}, tableName string)")
-			}
-		default:
-			return errors.New("unknown interface{} in func WriteKlineData(data []interface{})")
-		}
-	}
-	return nil
-}
-
 func LastDate(tableName string) int64 {
 	minTime := config.DateStart.UnixMilli()
 	query := strings.Replace(queries.QueryLastDay, "&tableName", tableName, 1)
@@ -157,7 +139,6 @@ func LastDate(tableName string) int64 {
 func BackgroundDBWriter() {
 	MessageChan = make(chan MessageDataType, 50)
 	for msg := range MessageChan {
-		msg.Wg.Done()
-		//utils.GetErrorMessage().WriteError(errors.New("it error again"))
+		go execQueryConcurrent(msg.Query, msg.Wg, msg.Data...)
 	}
 }

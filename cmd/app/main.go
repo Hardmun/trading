@@ -13,7 +13,7 @@ import (
 	"trading/internal/utils"
 )
 
-// UpdateTradingTables UpdateTables updates the tables based on the provided update option.
+// UpdateTradingTablesData UpdateTradingTables UpdateTables updates the tables based on the provided update option.
 //
 //	 1  - Updates only non-existing final records.
 //	 0  - Updates all records.
