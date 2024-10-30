@@ -75,7 +75,8 @@ func UpdateDatabaseTables() error {
 	}
 
 	finalQuery.WriteString("PRAGMA journal_mode= WAL;")
-	err := ExecQuery(finalQuery.String())
+	_, err := db.Exec(finalQuery.String())
+	//err := ExecQuery(finalQuery.String())
 	if err != nil {
 		return err
 	}
@@ -91,20 +92,42 @@ func execQueryConcurrent(query string, wg *sync.WaitGroup, params ...any) {
 }
 
 func ExecQuery(query string, params ...any) error {
-	prep, err := db.Prepare(query)
+	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
+	_, err = db.Exec(query, params...)
+	if err != nil {
+		return err
+	}
+
 	defer func() {
-		if err = prep.Close(); err != nil {
-			fmt.Println(err.Error())
+		if r := recover(); r != nil {
+			_ = tx.Rollback()
 		}
 	}()
-	_, err = prep.Exec(params...)
-	if err != nil {
-		return err
-	}
-	return nil
+	defer func() {
+		if tx != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	return tx.Commit()
+
+	//prep, err := db.Prepare(query)
+	//if err != nil {
+	//	return err
+	//}
+	//defer func() {
+	//	if err = prep.Close(); err != nil {
+	//		fmt.Println(err.Error())
+	//	}
+	//}()
+	//_, err = prep.Exec(params...)
+	//if err != nil {
+	//	return err
+	//}
+	//return nil
 }
 
 func fetchData(query string, params ...any) (any, error) {

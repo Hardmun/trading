@@ -26,7 +26,8 @@ var Record = []any{
 	"2255.59685000",
 	"112059089.48321300",
 }
-var GroupedRecords [][][]any
+var queryText = strings.Replace(queries.InsertTradingData, "&tableName",
+	"BTCUSDT_1h", 1)
 
 // Batch writing
 func BatchWriting(step int, startDate int64) {
@@ -122,8 +123,6 @@ func TestSyncWriting(t *testing.T) {
 		}
 	})
 	t.Run("Writing messages to database", func(t *testing.T) {
-		queryText := strings.Replace(queries.InsertTradingData, "&tableName",
-			"BTCUSDT_1h", 1)
 		startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
 
 		for i := 0; i < 1000000; i++ {
@@ -152,10 +151,10 @@ func GetGroupedRecords() [][][]any {
 	var arrayStep = make([][]any, step)
 
 	for s, g := 0, 0; startTime < endTime; startTime, s = startTime+int64(time.Second/time.Millisecond), s+1 {
-		if s >= step-1 {
+		if s >= step {
 			s = 0
 			g++
-			if g > 200 {
+			if g > 500 {
 				break
 			}
 			grp = append(grp, arrayStep)
@@ -167,6 +166,16 @@ func GetGroupedRecords() [][][]any {
 		arrayStep[s] = NewRecord
 	}
 	return grp
+}
+
+func apiEmulation(v [][]any) error {
+	for _, r := range v {
+		err := sqlite.ExecQuery(queryText, r...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func TestTestGrouped(t *testing.T) {
@@ -183,13 +192,29 @@ func TestTestGrouped(t *testing.T) {
 		}
 	})
 
-	GroupedRecords = GetGroupedRecords()
+	groupedRecords := GetGroupedRecords()
+	lmt := utils.NewLimiter(time.Second, 50)
 
-	//t.Run("Writing messages to database", func(t *testing.T) {
-	//	var err error
-	//	err = PrepareBatchWriting()
-	//	if err != nil {
-	//		t.Fatal(err)
-	//	}
-	//})
+	t.Run("Writing messages to database", func(t *testing.T) {
+		var wgrp sync.WaitGroup
+		for _, v := range groupedRecords {
+			if errMessage.HasError() {
+				break
+			}
+			lmt.Wait()
+			wgrp.Add(1)
+			go func(v [][]any, wg *sync.WaitGroup) {
+				defer wg.Done()
+				err := apiEmulation(v)
+				if err != nil {
+					errMessage.WriteError(err)
+				}
+			}(v, &wgrp)
+		}
+		wgrp.Wait()
+		err := errMessage.GetError()
+		if err != nil {
+			t.Fatal()
+		}
+	})
 }
