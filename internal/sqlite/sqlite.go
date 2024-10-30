@@ -7,6 +7,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"trading/internal/config"
 	"trading/pgk/queries"
@@ -18,8 +19,9 @@ type KlineData struct {
 }
 
 type MessageDataType struct {
-	data      []any
-	tableName string
+	Query string
+	Data  []any
+	Wg    *sync.WaitGroup
 }
 
 var db *sql.DB
@@ -152,9 +154,10 @@ func LastDate(tableName string) int64 {
 	return minTime
 }
 
-func backgroundDBWriter() {
+func BackgroundDBWriter() {
 	MessageChan = make(chan MessageDataType, 50)
 	for msg := range MessageChan {
-		_ = msg
+		msg.Wg.Done()
+		//utils.GetErrorMessage().WriteError(errors.New("it error again"))
 	}
 }

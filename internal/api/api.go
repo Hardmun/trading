@@ -8,7 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+	"sync"
 	"trading/internal/config"
+	"trading/internal/sqlite"
+	"trading/pgk/queries"
 )
 
 type KlineParams struct {
@@ -70,7 +74,39 @@ func RequestKlineData(params KlineParams) error {
 		}
 		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, msg))
 	case []interface{}:
+		var wg sync.WaitGroup
+		query := strings.Replace(queries.InsertTradingData, "&tableName",
+			fmt.Sprintf("%s_%s", params.Symbol, params.Interval), 1)
 
+		for _, kl := range val {
+			switch klData := kl.(type) {
+			case []interface{}:
+				if len(klData) == 0 {
+					return nil
+				}
+
+				switch dataSlice := kl.(type) {
+				case []interface{}:
+					var dbParams = sqlite.MessageDataType{
+						Query: query,
+						Data:  dataSlice[:11],
+						Wg:    &wg,
+					}
+					wg.Add(1)
+					sqlite.MessageChan <- dbParams
+
+					//err = execQuery(query, dataSlice[:11]...)
+					//if err != nil {
+					//	return err
+					//}
+				default:
+					return errors.New("unknown interface{} in func RequestKlineData(params KlineParams)")
+				}
+			default:
+				return errors.New("unknown interface{} in func RequestKlineData(params KlineParams)")
+			}
+		}
+		wg.Wait()
 		//err = sqlite.WriteKlineData(val, fmt.Sprintf("%s_%s", params.Symbol, params.Interval))
 		//if err != nil {
 		//	return err

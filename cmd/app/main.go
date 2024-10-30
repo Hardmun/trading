@@ -100,6 +100,9 @@ func main() {
 		errLog.Fatal()
 	}
 
-	//4. Uploading new trading data
+	//4. Background DB query receiver
+	go sqlite.BackgroundDBWriter()
+
+	//5. Uploading new trading data
 	UpdateTradingTablesData(-1)
 }
