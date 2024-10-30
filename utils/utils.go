@@ -74,10 +74,10 @@ func getDataFromServer(params klineParams) error {
 		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, msg))
 	case []interface{}:
 
-		//err = data.WriteKlineData(val, fmt.Sprintf("%s_%s", params.symbol, params.interval))
-		//if err != nil {
-		//	return err
-		//}
+		err = data.WriteKlineData(val, fmt.Sprintf("%s_%s", params.symbol, params.interval))
+		if err != nil {
+			return err
+		}
 	case interface{}:
 		return errors.New("unknown interface{}")
 	}
