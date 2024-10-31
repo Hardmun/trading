@@ -1,6 +1,8 @@
 package test
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -151,13 +153,9 @@ func GetGroupedRecords() [][][]any {
 
 	var arrayStep = make([][]any, step)
 
-	for s, g := int64(0), 0; startTime <= endTime; startTime, s = startTime+sec1, s+1 {
+	for s := int64(0); startTime <= endTime; startTime, s = startTime+sec1, s+1 {
 		if s >= step {
 			s = 0
-			g++
-			//if g > loopTestNumber {
-			//	break
-			//}
 			grp = append(grp, arrayStep)
 			arrayStep = make([][]any, step)
 		}
@@ -171,7 +169,7 @@ func GetGroupedRecords() [][][]any {
 
 func apiEmulation(v [][]any) error {
 	for _, r := range v {
-		err := sqlite.ExecQuery(queryText, 0, r...)
+		err := sqlite.ExecQuery(queryText, 1, r...)
 		if err != nil {
 			return err
 		}
@@ -179,32 +177,36 @@ func apiEmulation(v [][]any) error {
 	return nil
 }
 
+// Testing using pocket transfer
+// TODO: SQLite doesnt support more than 5000 concurrent connections
 func TestGroupWriting(t *testing.T) {
 	errMessage = utils.GetErrorMessage()
 	t.Run("DB connection and table updating", func(t *testing.T) {
 		var err error
+
 		_, err = sqlite.GetDb()
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
 		err = sqlite.UpdateDatabaseTables()
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
+		}
+
+		err = sqlite.ExecQuery("delete from BTCUSDT_1h", 0)
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 
 	groupedRecords := GetGroupedRecords()
-	lmt := utils.NewLimiter(time.Second, 50)
 
 	t.Run("Writing messages to database", func(t *testing.T) {
-		//needRows := config.Step * loopTestNumber
-
 		var wGrp sync.WaitGroup
 		for _, v := range groupedRecords {
 			if errMessage.HasError() {
 				break
 			}
-			lmt.Wait()
 			wGrp.Add(1)
 			go func(v [][]any, wg *sync.WaitGroup) {
 				defer wg.Done()
@@ -219,5 +221,16 @@ func TestGroupWriting(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+
+		var data any
+		data, err = sqlite.FetchData("SELECT count() from  BTCUSDT_1h")
+		if err != nil {
+			t.Error(err)
+		}
+
+		if n := config.Step*loopTestNumber - data.(int64); n > 0 {
+			t.Error(errors.New(fmt.Sprintf("Actuall numbers rows less than expected on %v", n)))
+		}
+
 	})
 }

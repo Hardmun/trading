@@ -136,6 +136,12 @@ func ExecQuery(query string, writeOption int8, params ...any) error {
 				_ = tx.Rollback()
 			}
 		}()
+
+		_, err = db.Exec(query, params...)
+		if err != nil {
+			return err
+		}
+
 		return tx.Commit()
 	}
 
@@ -147,7 +153,7 @@ func ExecQuery(query string, writeOption int8, params ...any) error {
 	return nil
 }
 
-func fetchData(query string, params ...any) (any, error) {
+func FetchData(query string, params ...any) (any, error) {
 	row := db.QueryRow(query, params...)
 
 	var resp any
@@ -163,7 +169,7 @@ func LastDate(tableName string) int64 {
 	minTime := config.DateStart.UnixMilli()
 	query := strings.Replace(queries.QueryLastDay, "&tableName", tableName, 1)
 
-	resultQuery, err := fetchData(query)
+	resultQuery, err := FetchData(query)
 	if err == nil {
 		switch t := resultQuery.(type) {
 		case int64:
