@@ -75,8 +75,7 @@ func UpdateDatabaseTables() error {
 	}
 
 	finalQuery.WriteString("PRAGMA journal_mode= WAL;")
-	_, err := db.Exec(finalQuery.String())
-	//err := ExecQuery(finalQuery.String())
+	err := ExecQuery(finalQuery.String(), 0)
 	if err != nil {
 		return err
 	}
@@ -86,48 +85,66 @@ func UpdateDatabaseTables() error {
 func execQueryConcurrent(query string, wg *sync.WaitGroup, params ...any) {
 	defer wg.Done()
 
-	if err := ExecQuery(query, params...); err != nil {
+	if err := ExecQuery(query, 0, params...); err != nil {
 		utils.GetErrorMessage().WriteError(err)
 	}
 }
 
-func ExecQuery(query string, params ...any) error {
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+// ExecQuery writes a message to the database based on the provided query and write option.
+//
+// Parameters:
+//   - query (string): The SQL query to be executed.
+//   - writeOption (int8): Specifies the writing option to the database:
+//     0 - Direct writing without preparation.
+//     1 - Writing using prepared statements.
+//     2 - Writing within a transaction block.
+//   - params (...any): Optional parameters for the query.
+//
+// Returns:
+//   - error: Returns an error if the query execution fails, otherwise nil.
+func ExecQuery(query string, writeOption int8, params ...any) error {
+	var (
+		err error
+		tx  *sql.Tx
+	)
+	if writeOption == 1 {
+		var prep *sql.Stmt
+		prep, err = db.Prepare(query)
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err = prep.Close(); err != nil {
+				fmt.Println(err.Error())
+			}
+		}()
+		_, err = prep.Exec(params...)
+
+		return nil
+	} else if writeOption == 2 {
+		tx, err = db.Begin()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				_ = tx.Rollback()
+			}
+		}()
+		defer func() {
+			if tx != nil {
+				_ = tx.Rollback()
+			}
+		}()
+		return tx.Commit()
 	}
+
 	_, err = db.Exec(query, params...)
 	if err != nil {
 		return err
 	}
 
-	defer func() {
-		if r := recover(); r != nil {
-			_ = tx.Rollback()
-		}
-	}()
-	defer func() {
-		if tx != nil {
-			_ = tx.Rollback()
-		}
-	}()
-
-	return tx.Commit()
-
-	//prep, err := db.Prepare(query)
-	//if err != nil {
-	//	return err
-	//}
-	//defer func() {
-	//	if err = prep.Close(); err != nil {
-	//		fmt.Println(err.Error())
-	//	}
-	//}()
-	//_, err = prep.Exec(params...)
-	//if err != nil {
-	//	return err
-	//}
-	//return nil
+	return nil
 }
 
 func fetchData(query string, params ...any) (any, error) {

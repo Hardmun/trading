@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	Step     = 500
-	KlineURL = "https://api.binance.com/api/v3/klines"
+	Step     int64 = 500
+	KlineURL       = "https://api.binance.com/api/v3/klines"
 )
 
 var (
