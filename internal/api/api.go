@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"sync"
 	"trading/internal/config"
 	"trading/internal/sqlite"
 	"trading/pgk/queries"
@@ -74,7 +73,7 @@ func RequestKlineData(params KlineParams) error {
 		}
 		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, msg))
 	case []interface{}:
-		var wg sync.WaitGroup
+		//var wg sync.WaitGroup
 		query := strings.Replace(queries.InsertTradingData, "&tableName",
 			fmt.Sprintf("%s_%s", params.Symbol, params.Interval), 1)
 
@@ -91,7 +90,7 @@ func RequestKlineData(params KlineParams) error {
 						Data:        dataSlice[:11],
 						WriteOption: 0,
 					}
-					wg.Add(1)
+					//wg.Add(1)
 					sqlite.MessageChan <- dbParams
 				default:
 					return errors.New("unknown interface{} in func RequestKlineData(params KlineParams)")
@@ -100,7 +99,7 @@ func RequestKlineData(params KlineParams) error {
 				return errors.New("unknown interface{} in func RequestKlineData(params KlineParams)")
 			}
 		}
-		wg.Wait()
+		//wg.Wait()
 		//err = sqlite.WriteKlineData(val, fmt.Sprintf("%s_%s", params.Symbol, params.Interval))
 		//if err != nil {
 		//	return err

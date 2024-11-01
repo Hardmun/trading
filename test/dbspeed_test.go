@@ -186,8 +186,10 @@ func apiEmulation(v [][]any) error {
 }
 
 // Testing using pocket transfer
-// TODO: SQLite doesnt support more than 5000 concurrent connections
 func TestGroupWriting(t *testing.T) {
+	config.Intervals = map[string]time.Duration{
+		"1h": time.Hour,
+	}
 	errMessage = utils.GetErrorMessage()
 	t.Run("DB connection and table updating", func(t *testing.T) {
 		var err error
