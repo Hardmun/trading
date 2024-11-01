@@ -6,7 +6,6 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
-	"sync"
 	"time"
 	"trading/internal/config"
 	"trading/internal/utils"
@@ -19,9 +18,9 @@ type KlineData struct {
 }
 
 type MessageDataType struct {
-	Query string
-	Data  []any
-	Wg    *sync.WaitGroup
+	Query       string
+	Data        []any
+	WriteOption int8
 }
 
 var db *sql.DB
@@ -81,13 +80,6 @@ func UpdateDatabaseTables() error {
 	}
 
 	return nil
-}
-func execQueryConcurrent(query string, wg *sync.WaitGroup, params ...any) {
-	defer wg.Done()
-
-	if err := ExecQuery(query, 0, params...); err != nil {
-		utils.GetErrorMessage().WriteError(err)
-	}
 }
 
 // ExecQuery writes a message to the database based on the provided query and write option.
@@ -183,8 +175,11 @@ func LastDate(tableName string) int64 {
 }
 
 func BackgroundDBWriter() {
-	MessageChan = make(chan MessageDataType, 50)
+	MessageChan = make(chan MessageDataType)
 	for msg := range MessageChan {
-		go execQueryConcurrent(msg.Query, msg.Wg, msg.Data...)
+		err := ExecQuery(msg.Query, msg.WriteOption, msg.Data...)
+		if err != nil {
+			utils.GetErrorMessage().WriteError(err)
+		}
 	}
 }

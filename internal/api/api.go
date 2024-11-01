@@ -87,9 +87,9 @@ func RequestKlineData(params KlineParams) error {
 				switch dataSlice := kl.(type) {
 				case []interface{}:
 					var dbParams = sqlite.MessageDataType{
-						Query: query,
-						Data:  dataSlice[:11],
-						Wg:    &wg,
+						Query:       query,
+						Data:        dataSlice[:11],
+						WriteOption: 0,
 					}
 					wg.Add(1)
 					sqlite.MessageChan <- dbParams

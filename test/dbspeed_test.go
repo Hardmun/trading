@@ -168,11 +168,19 @@ func GetGroupedRecords() [][][]any {
 }
 
 func apiEmulation(v [][]any) error {
+
 	for _, r := range v {
-		err := sqlite.ExecQuery(queryText, 1, r...)
-		if err != nil {
-			return err
+		newMessage := sqlite.MessageDataType{
+			Query:       queryText,
+			Data:        r,
+			WriteOption: 0,
 		}
+
+		sqlite.MessageChan <- newMessage
+		//err := sqlite.ExecQuery(queryText, 0, r...)
+		//if err != nil {
+		//	return err
+		//}
 	}
 	return nil
 }
@@ -200,23 +208,20 @@ func TestGroupWriting(t *testing.T) {
 	})
 
 	groupedRecords := GetGroupedRecords()
+	go sqlite.BackgroundDBWriter()
 
 	t.Run("Writing messages to database", func(t *testing.T) {
-		var wGrp sync.WaitGroup
 		for _, v := range groupedRecords {
 			if errMessage.HasError() {
 				break
 			}
-			wGrp.Add(1)
-			go func(v [][]any, wg *sync.WaitGroup) {
-				defer wg.Done()
+			func(v [][]any) {
 				err := apiEmulation(v)
 				if err != nil {
 					errMessage.WriteError(err)
 				}
-			}(v, &wGrp)
+			}(v)
 		}
-		wGrp.Wait()
 		err := errMessage.GetError()
 		if err != nil {
 			t.Error(err)
