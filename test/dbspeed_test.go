@@ -89,10 +89,6 @@ func BenchmarkSingleRowWriting(b *testing.B) {
 	}
 
 	prepare(b)
-	//err = sqlite.UpdateDatabaseTables()
-	//if err != nil {
-	//	b.Error(err)
-	//}
 
 	for i := 0; i < b.N; i++ {
 		wg.Add(1)
@@ -157,12 +153,8 @@ func SingleRowWriting(step int64, startDate int64) {
 	}
 }
 
-func prepare[tb ~*testing.T | ~*testing.B](t tb) {
-
-	if val, ok := any(t).(*testing.T); ok {
-
-	}
-	t.Run("DB connection and table updating", func(t *testing.T) {
+func prepare(t any) {
+	var exeFunc = func() error {
 		var err error
 		config.Intervals = map[string]time.Duration{
 			"1h": time.Hour,
@@ -170,16 +162,35 @@ func prepare[tb ~*testing.T | ~*testing.B](t tb) {
 
 		_, err = sqlite.GetDb()
 		if err != nil {
-			t.Fatal(err)
+			return err
 		}
 		err = sqlite.UpdateDatabaseTables()
 		if err != nil {
-			t.Fatal(err)
+			return err
 		}
 
 		err = sqlite.ExecQuery("delete from BTCUSDT_1h", 0)
 		if err != nil {
-			t.Fatal(err)
+			return err
 		}
-	})
+
+		return nil
+	}
+
+	switch v := t.(type) {
+	case *testing.T:
+		v.Run("DB connection and table updating", func(t *testing.T) {
+			err := exeFunc()
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	case *testing.B:
+		v.Run("DB connection and table updating", func(b *testing.B) {
+			err := exeFunc()
+			if err != nil {
+				b.Fatal(err)
+			}
+		})
+	}
 }
