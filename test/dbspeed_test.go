@@ -33,112 +33,73 @@ var queryText = strings.Replace(queries.InsertTradingData, "&tableName",
 
 const loopTestNumber int64 = 500
 
-// Batch writing
-func BatchWriting(step int64, startDate int64) {
-	defer wg.Done()
-	for i := int64(0); i < step; i++ {
-		NewRecord := Record
-		NewRecord[0] = startDate
-		startDate += int64(time.Second / time.Millisecond)
-
-		err := sqlite.ExecQuery(queryText, 0, NewRecord...)
-		if err != nil {
-			errMessage.WriteError(err)
-		}
-	}
-}
-
-func PrepareBatchWriting() error {
-	startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
-	step := config.Step
-	for t := 0; t < 1; t, startDate = t+1, startDate+step*int64(time.Second/time.Millisecond) {
-		if errMessage.HasError() {
-			break
-		}
-		wg.Add(1)
-		go BatchWriting(step, startDate)
-	}
-
-	wg.Wait()
-
-	err := errMessage.GetError()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func TestBatchWriting(t *testing.T) {
+// Testing using pocket transfer
+func TestGroupWriting(t *testing.T) {
 	errMessage = utils.GetErrorMessage()
-	t.Run("DB connection and table updating", func(t *testing.T) {
-		var err error
-		_, err = sqlite.GetDb()
-		if err != nil {
-			t.Error(err)
-		}
-		err = sqlite.UpdateDatabaseTables()
-		if err != nil {
-			t.Error(err)
-		}
-	})
+	limiter := utils.NewLimiter(time.Second, 50)
+	prepare(t)
+
+	groupedRecords := GetGroupedRecords()
+	go sqlite.BackgroundDBWriter()
+
 	t.Run("Writing messages to database", func(t *testing.T) {
-		var err error
-		err = PrepareBatchWriting()
+		wg = sync.WaitGroup{}
+		for _, v := range groupedRecords {
+			if errMessage.HasError() {
+				break
+			}
+			limiter.Wait()
+			wg.Add(1)
+			go func(v [][]any, group *sync.WaitGroup) {
+				defer group.Done()
+				err := apiEmulation(v)
+				if err != nil {
+					errMessage.WriteError(err)
+				}
+			}(v, &wg)
+		}
+		err := errMessage.GetError()
 		if err != nil {
 			t.Error(err)
 		}
+
+		wg.Wait()
+		errMessage.Close()
+		close(sqlite.MessageChan)
+
+		var data any
+		data, err = sqlite.FetchData("SELECT count() from  BTCUSDT_1h")
+		if err != nil {
+			t.Error(err)
+		}
+
+		if n := config.Step*loopTestNumber - data.(int64); n > 0 {
+			t.Error(errors.New(fmt.Sprintf("Actuall numbers rows less than expected on %v", n)))
+		}
+
 	})
 }
 
-func BenchmarkBatchWriting(b *testing.B) {
+func BenchmarkSingleRowWriting(b *testing.B) {
 	startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
 	step := config.Step
 	_, err := sqlite.GetDb()
 	if err != nil {
 		b.Error(err)
 	}
-	err = sqlite.UpdateDatabaseTables()
-	if err != nil {
-		b.Error(err)
-	}
+
+	prepare(b)
+	//err = sqlite.UpdateDatabaseTables()
+	//if err != nil {
+	//	b.Error(err)
+	//}
 
 	for i := 0; i < b.N; i++ {
 		wg.Add(1)
 		startDate += startDate + step*int64(time.Second/time.Millisecond)
-		BatchWriting(step, startDate)
+		SingleRowWriting(step, startDate)
 		wg.Wait()
 	}
-}
-
-// Sync writing
-func TestSyncWriting(t *testing.T) {
-	t.Run("DB connection and table updating", func(t *testing.T) {
-		var err error
-		_, err = sqlite.GetDb()
-		if err != nil {
-			t.Error(err)
-		}
-		err = sqlite.UpdateDatabaseTables()
-		if err != nil {
-			t.Error(err)
-		}
-	})
-	t.Run("Writing messages to database", func(t *testing.T) {
-		startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
-
-		for i := 0; i < 1000000; i++ {
-			NewRecord := Record
-			NewRecord[0] = startDate
-			startDate += int64(time.Second / time.Millisecond)
-
-			err := sqlite.ExecQuery(queryText, 0, NewRecord...)
-			if err != nil {
-				errMessage.WriteError(err)
-			}
-		}
-	})
-
 }
 
 // groped by [loopTestNumber]slices
@@ -181,15 +142,31 @@ func apiEmulation(v [][]any) error {
 	return nil
 }
 
-// Testing using pocket transfer
-func TestGroupWriting(t *testing.T) {
-	config.Intervals = map[string]time.Duration{
-		"1h": time.Hour,
+// Batch writing
+func SingleRowWriting(step int64, startDate int64) {
+	defer wg.Done()
+	for i := int64(0); i < step; i++ {
+		NewRecord := Record
+		NewRecord[0] = startDate
+		startDate += int64(time.Second / time.Millisecond)
+
+		err := sqlite.ExecQuery(queryText, 0, NewRecord...)
+		if err != nil {
+			errMessage.WriteError(err)
+		}
 	}
-	errMessage = utils.GetErrorMessage()
-	limiter := utils.NewLimiter(time.Second, 50)
+}
+
+func prepare[tb ~*testing.T | ~*testing.B](t tb) {
+
+	if val, ok := any(t).(*testing.T); ok {
+
+	}
 	t.Run("DB connection and table updating", func(t *testing.T) {
 		var err error
+		config.Intervals = map[string]time.Duration{
+			"1h": time.Hour,
+		}
 
 		_, err = sqlite.GetDb()
 		if err != nil {
@@ -204,45 +181,5 @@ func TestGroupWriting(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-	})
-
-	groupedRecords := GetGroupedRecords()
-	go sqlite.BackgroundDBWriter()
-
-	t.Run("Writing messages to database", func(t *testing.T) {
-		wg = sync.WaitGroup{}
-		for _, v := range groupedRecords {
-			if errMessage.HasError() {
-				break
-			}
-			limiter.Wait()
-			wg.Add(1)
-			go func(v [][]any, group *sync.WaitGroup) {
-				defer group.Done()
-				err := apiEmulation(v)
-				if err != nil {
-					errMessage.WriteError(err)
-				}
-			}(v, &wg)
-		}
-		err := errMessage.GetError()
-		if err != nil {
-			t.Error(err)
-		}
-
-		wg.Wait()
-		errMessage.Close()
-		close(sqlite.MessageChan)
-
-		var data any
-		data, err = sqlite.FetchData("SELECT count() from  BTCUSDT_1h")
-		if err != nil {
-			t.Error(err)
-		}
-
-		if n := config.Step*loopTestNumber - data.(int64); n > 0 {
-			t.Error(errors.New(fmt.Sprintf("Actuall numbers rows less than expected on %v", n)))
-		}
-
 	})
 }
