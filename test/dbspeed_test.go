@@ -177,10 +177,6 @@ func apiEmulation(v [][]any) error {
 		}
 
 		sqlite.MessageChan <- newMessage
-		//err := sqlite.ExecQuery(queryText, 0, r...)
-		//if err != nil {
-		//	return err
-		//}
 	}
 	return nil
 }
@@ -191,6 +187,7 @@ func TestGroupWriting(t *testing.T) {
 		"1h": time.Hour,
 	}
 	errMessage = utils.GetErrorMessage()
+	limiter := utils.NewLimiter(time.Second, 50)
 	t.Run("DB connection and table updating", func(t *testing.T) {
 		var err error
 
@@ -213,21 +210,29 @@ func TestGroupWriting(t *testing.T) {
 	go sqlite.BackgroundDBWriter()
 
 	t.Run("Writing messages to database", func(t *testing.T) {
+		wg = sync.WaitGroup{}
 		for _, v := range groupedRecords {
 			if errMessage.HasError() {
 				break
 			}
-			func(v [][]any) {
+			limiter.Wait()
+			wg.Add(1)
+			go func(v [][]any, group *sync.WaitGroup) {
+				defer group.Done()
 				err := apiEmulation(v)
 				if err != nil {
 					errMessage.WriteError(err)
 				}
-			}(v)
+			}(v, &wg)
 		}
 		err := errMessage.GetError()
 		if err != nil {
 			t.Error(err)
 		}
+
+		wg.Wait()
+		errMessage.Close()
+		close(sqlite.MessageChan)
 
 		var data any
 		data, err = sqlite.FetchData("SELECT count() from  BTCUSDT_1h")
