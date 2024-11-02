@@ -36,7 +36,7 @@ const loopTestNumber int64 = 500
 // Testing using pocket transfer
 func TestGroupWriting(t *testing.T) {
 	errMessage = utils.GetErrorMessage()
-	limiter := sqlite.GetSqlLiteLimiter(time.Second, 50)
+	limiter := utils.NewLimiter(time.Second, 50)
 	prepare(t)
 
 	groupedRecords := GetGroupedRecords()
@@ -44,15 +44,20 @@ func TestGroupWriting(t *testing.T) {
 
 	t.Run("Writing messages to database", func(t *testing.T) {
 		wg = sync.WaitGroup{}
+		lim := make(chan struct{}, 5)
 		for _, v := range groupedRecords {
 			if errMessage.HasError() {
 				break
 			}
 			limiter.Wait()
+			lim <- struct{}{}
 			wg.Add(1)
 			go func(v [][]any, group *sync.WaitGroup) {
-				defer group.Done()
-				defer limiter.Done()
+				defer func() {
+					<-lim
+					group.Done()
+				}()
+
 				err := apiEmulation(v)
 				if err != nil {
 					errMessage.WriteError(err)
