@@ -6,6 +6,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"trading/internal/config"
 	"trading/internal/utils"
@@ -25,6 +26,8 @@ type MessageDataType struct {
 
 var db *sql.DB
 var MessageChan chan MessageDataType
+var SqLiteLimiter utils.Limit
+var onceSqLiteLimiter sync.Once
 
 func dbConnection() (*sql.DB, error) {
 	dbPath := "./db/sqlite.db"
@@ -60,6 +63,13 @@ func GetDb() (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func GetSqlLiteLimiter(d time.Duration, c int) utils.Limit {
+	onceSqLiteLimiter.Do(func() {
+		SqLiteLimiter = utils.NewLimiter(d, c)
+	})
+	return SqLiteLimiter
 }
 
 func UpdateDatabaseTables() error {
@@ -178,6 +188,7 @@ func BackgroundDBWriter() {
 	MessageChan = make(chan MessageDataType)
 	for msg := range MessageChan {
 		err := ExecQuery(msg.Query, msg.WriteOption, msg.Data...)
+		SqLiteLimiter.Done()
 		if err != nil {
 			utils.GetErrorMessage().WriteError(err)
 		}

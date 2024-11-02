@@ -67,9 +67,11 @@ type Limit struct {
 	countLimit int
 	count      int
 	ticker     *time.Ticker
+	limiter    chan struct{}
 }
 
 func (l *Limit) Wait() {
+	l.limiter <- struct{}{}
 	select {
 	case <-l.ticker.C:
 		l.count = l.countLimit
@@ -83,11 +85,16 @@ func (l *Limit) Wait() {
 	l.count--
 }
 
-func NewLimiter(d time.Duration, c int) *Limit {
-	l := &Limit{
+func (l *Limit) Done() {
+	<-l.limiter
+}
+
+func NewLimiter(d time.Duration, c int) Limit {
+	l := Limit{
 		countLimit: c,
 		count:      c,
 		ticker:     time.NewTicker(d),
+		limiter:    make(chan struct{}, c),
 	}
 	return l
 }
