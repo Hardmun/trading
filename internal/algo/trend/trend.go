@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/go-gota/gota/dataframe"
+	df "github.com/go-gota/gota/dataframe"
 	"os"
+	"trend/dataframe"
 )
-
-var data dataframe.DataFrame
 
 func IsUptrend() bool {
 	return true
@@ -25,6 +24,9 @@ func main() {
 	//
 	//io.re
 
-	data = dataframe.ReadCSV(read)
-	fmt.Println(data)
+	data := dataframe.ReadCSV(read)
+	_ = data
+
+	data1 := df.ReadCSV(read)
+	fmt.Println(data1.Col("open"))
 }
