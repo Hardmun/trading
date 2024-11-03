@@ -72,6 +72,7 @@ lb:
 	}
 	wGrp.Wait()
 	errMsg.Close()
+	close(routineLimiter)
 
 	if err := errMsg.GetError(); err != nil {
 		fmt.Println(err)
