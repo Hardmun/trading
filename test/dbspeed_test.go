@@ -31,7 +31,7 @@ var Record = []any{
 var queryText = strings.Replace(queries.InsertTradingData, "&tableName",
 	"BTCUSDT_1h", 1)
 
-const loopTestNumber int64 = 500
+const loopTestNumber int64 = 5000
 
 // Testing using pocket transfer
 func TestGroupWriting(t *testing.T) {
@@ -44,7 +44,7 @@ func TestGroupWriting(t *testing.T) {
 
 	t.Run("Writing messages to database", func(t *testing.T) {
 		wg = sync.WaitGroup{}
-		lim := make(chan struct{}, 5)
+		lim := make(chan struct{}, 50)
 		for _, v := range groupedRecords {
 			if errMessage.HasError() {
 				break
