@@ -27,6 +27,6 @@ func main() {
 	data := dataframe.ReadCSV(read)
 	_ = data
 
-	data1 := df.ReadCSV(read)
+	data1 := df.ReadCSV(read, df.HasHeader(true))
 	fmt.Println(data1.Col("open"))
 }
