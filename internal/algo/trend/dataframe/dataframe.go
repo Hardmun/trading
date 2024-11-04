@@ -108,13 +108,12 @@ func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
 	}
 	startRow := 0
 	length := len(df.Columns[0])
-	if len(elems) != 0 && length != 0 {
-		length = Min(length, elems[0][1]-elems[0][0])
-		startRow = elems[0][0]
-	}
-
 	if length == 0 {
 		return DataFrame{}
+	}
+	if len(elems) != 0 {
+		length = Min(length, elems[0][1]-elems[0][0])
+		startRow = elems[0][0]
 	}
 
 	cols := make([][]any, width)
