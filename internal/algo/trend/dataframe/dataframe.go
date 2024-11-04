@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"io"
+	"math"
 	"strconv"
 )
 
@@ -17,17 +18,8 @@ type loadOptions struct {
 	colTypes   []string
 }
 
-//type element any
-//
-//type series struct {
-//	name     string
-//	elements element
-//}
-
 type DataFrame struct {
 	columns [][]any
-	ncols   int
-	nrows   int
 	err     error
 }
 
@@ -44,7 +36,7 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 		records = records[1:]
 	}
 
-	height := len(records)
+	length := len(records)
 	width := len(records[0])
 
 	if cfg.colTypes != nil {
@@ -57,9 +49,9 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 	// Determining column width first; rows are greater than columns
 	df.columns = make([][]any, width)
 	for c := 0; c < width; c++ {
-		df.columns[c] = make([]any, height)
+		df.columns[c] = make([]any, length)
 	}
-	for r := 0; r < height; r++ {
+	for r := 0; r < length; r++ {
 		for c := 0; c < width; c++ {
 			if cfg.colTypes != nil {
 				var err error
@@ -84,6 +76,49 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 			}
 		}
 	}
+}
+
+func (df *DataFrame) Copy() DataFrame {
+	width := len(df.columns)
+	if width == 0 {
+		return DataFrame{}
+	}
+	length := len(df.columns[0])
+	if length == 0 {
+		return DataFrame{}
+	}
+
+	columns := make([][]any, width)
+	for c := 0; c < width; c++ {
+		columns[c] = make([]any, length)
+	}
+	for r := 0; r < length; r++ {
+		for c := 0; c < width; c++ {
+			columns[c][r] = df.columns[c][r]
+		}
+	}
+
+	return DataFrame{
+		columns: columns,
+	}
+}
+
+func (df *DataFrame) Len() int {
+	if len(df.columns) == 0 {
+		return 0
+	}
+	return len(df.columns[0])
+}
+
+func (df *DataFrame) Log(columns []int) DataFrame {
+	newDf := df.Copy()
+	for r := 0; r < len(newDf.columns); r++ {
+		for _, c := range columns {
+			newDf.columns[c][r] = math.Log(newDf.columns[c][r].(float64))
+		}
+	}
+
+	return newDf
 }
 
 func HasHeader(has bool) LoadOption {

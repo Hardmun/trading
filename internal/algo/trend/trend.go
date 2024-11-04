@@ -24,7 +24,14 @@ func main() {
 		"float64",
 	}
 
-	//lookback := 30
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
-	fmt.Println(dataFrame)
+	dfLogged := dataFrame.Log([]int{1, 2, 3, 4})
+
+	length := dataFrame.Len()
+	//lookback := 30
+
+	supportSlope := make([]float64, length)
+	resistSlope := make([]float64, length)
+
+	fmt.Println(dfLogged, supportSlope, resistSlope)
 }
