@@ -34,19 +34,24 @@ func (c ColumnType) Len() int {
 func (c ColumnType) Copy(elems ...[2]int) ColumnType {
 	width := c.Count()
 	cols := make(ColumnType, width)
-	if len(elems) == 0 || width == 0 {
-		copy(cols, c)
+	if width == 0 {
 		return cols
 	}
 
 	length := len(c[0])
-	length = Min(length, elems[0][1]-elems[0][0])
+	if len(elems) == 0 {
+		for n := 0; n < width; n++ {
+			cols[n] = make([]any, length)
+			copy(cols[n], c[n])
+		}
+		return cols
+	}
 
+	length = Min(length, elems[0][1]-elems[0][0])
 	for n := 0; n < width; n++ {
 		cols[n] = make([]any, length)
 		copy(cols[n], c[n][elems[0][0]:elems[0][0]+length])
 	}
-
 	return cols
 }
 
