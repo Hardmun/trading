@@ -10,6 +10,13 @@ func IsUptrend() bool {
 	return true
 }
 
+func Max64(a, b int64) int64 {
+	if b > a {
+		return b
+	}
+	return a
+}
+
 func main() {
 	read, _ := os.Open("./BTCUSDT86400.csv")
 	defer func() {
@@ -28,10 +35,13 @@ func main() {
 	dfLogged := dataFrame.Log([]int{1, 2, 3, 4})
 
 	length := dataFrame.Len()
-	//lookback := 30
-
+	//colCount := dataFrame.Columns.Count()
+	lookback := 30
+	//
 	supportSlope := make([]float64, length)
 	resistSlope := make([]float64, length)
+	//
+	candles := dfLogged.Copy([2]int{0, lookback})
 
-	fmt.Println(dfLogged, supportSlope, resistSlope)
+	fmt.Println(dfLogged, supportSlope, resistSlope, candles)
 }

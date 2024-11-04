@@ -18,8 +18,14 @@ type loadOptions struct {
 	colTypes   []string
 }
 
+type Columns [][]any
+
+func (c Columns) Count() int {
+	return len(c)
+}
+
 type DataFrame struct {
-	columns [][]any
+	Columns Columns
 	err     error
 }
 
@@ -42,14 +48,14 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 	if cfg.colTypes != nil {
 		if len(cfg.colTypes) != width {
 			df.err = errors.New("mismatch between the number of column types " +
-				"provided and the actual number of columns")
+				"provided and the actual number of Columns")
 		}
 	}
 
-	// Determining column width first; rows are greater than columns
-	df.columns = make([][]any, width)
+	// Determining column width first; rows are greater than Columns
+	df.Columns = make([][]any, width)
 	for c := 0; c < width; c++ {
-		df.columns[c] = make([]any, length)
+		df.Columns[c] = make([]any, length)
 	}
 	for r := 0; r < length; r++ {
 		for c := 0; c < width; c++ {
@@ -57,64 +63,87 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 				var err error
 				switch cfg.colTypes[c] {
 				case "int":
-					df.columns[c][r], err = strconv.ParseInt(records[r][c], 10, 64)
+					df.Columns[c][r], err = strconv.ParseInt(records[r][c], 10, 64)
 					if err != nil {
 						df.err = err
 						return
 					}
 				case "float64":
-					df.columns[c][r], err = strconv.ParseFloat(records[r][c], 64)
+					df.Columns[c][r], err = strconv.ParseFloat(records[r][c], 64)
 					if err != nil {
 						df.err = err
 						return
 					}
 				default:
-					df.columns[c][r] = records[r][c]
+					df.Columns[c][r] = records[r][c]
 				}
 			} else {
-				df.columns[c][r] = records[r][c]
+				df.Columns[c][r] = records[r][c]
 			}
 		}
 	}
 }
 
-func (df *DataFrame) Copy() DataFrame {
-	width := len(df.columns)
+func Min[nm ~int | ~float64](numbers ...nm) nm {
+	length := len(numbers)
+	if length == 0 {
+		return 0
+	}
+	if length == 1 {
+		return numbers[0]
+	}
+	minNum := numbers[0]
+	for n := 1; n < length; n++ {
+		if numbers[n] < minNum {
+			minNum = numbers[n]
+		}
+	}
+	return minNum
+}
+
+func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
+	width := len(df.Columns)
 	if width == 0 {
 		return DataFrame{}
 	}
-	length := len(df.columns[0])
+	startRow := 0
+	length := len(df.Columns[0])
+	if len(elems) != 0 && length != 0 {
+		length = Min(length, elems[0][1]-elems[0][0])
+		startRow = elems[0][0]
+	}
+
 	if length == 0 {
 		return DataFrame{}
 	}
 
-	columns := make([][]any, width)
+	cols := make([][]any, width)
 	for c := 0; c < width; c++ {
-		columns[c] = make([]any, length)
+		cols[c] = make([]any, length)
 	}
-	for r := 0; r < length; r++ {
+	for r := startRow; r < length+startRow; r++ {
 		for c := 0; c < width; c++ {
-			columns[c][r] = df.columns[c][r]
+			cols[c][r] = df.Columns[c][r]
 		}
 	}
 
 	return DataFrame{
-		columns: columns,
+		Columns: cols,
 	}
 }
 
 func (df *DataFrame) Len() int {
-	if len(df.columns) == 0 {
+	if len(df.Columns) == 0 {
 		return 0
 	}
-	return len(df.columns[0])
+	return len(df.Columns[0])
 }
 
-func (df *DataFrame) Log(columns []int) DataFrame {
+func (df *DataFrame) Log(Columns []int) DataFrame {
 	newDf := df.Copy()
-	for r := 0; r < len(newDf.columns); r++ {
-		for _, c := range columns {
-			newDf.columns[c][r] = math.Log(newDf.columns[c][r].(float64))
+	for r := 0; r < len(newDf.Columns); r++ {
+		for _, c := range Columns {
+			newDf.Columns[c][r] = math.Log(newDf.Columns[c][r].(float64))
 		}
 	}
 
