@@ -24,9 +24,28 @@ func (c ColumnType) Count() int {
 	return len(c)
 }
 
-func (c ColumnType) Copy() ColumnType {
-	cols := make(ColumnType, c.Count())
-	copy(cols, c)
+func (c ColumnType) Len() int {
+	if len(c) == 0 {
+		return 0
+	}
+	return len(c[0])
+}
+
+func (c ColumnType) Copy(elems ...[2]int) ColumnType {
+	width := c.Count()
+	cols := make(ColumnType, width)
+	if len(elems) == 0 || width == 0 {
+		copy(cols, c)
+		return cols
+	}
+
+	length := len(c[0])
+	length = Min(length, elems[0][1]-elems[0][0])
+
+	for n := 0; n < width; n++ {
+		cols[n] = make([]any, length)
+		copy(cols[n], c[n][elems[0][0]:elems[0][0]+length])
+	}
 
 	return cols
 }
@@ -118,30 +137,28 @@ func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
 		return DataFrame{}
 	}
 
-	cols := make(ColumnType, width)
-	if len(elems) == 0 {
-		cols = df.Columns.Copy()
-		return DataFrame{
-			Columns: cols,
-		}
-	}
-	length = Min(length, elems[0][1]-elems[0][0])
-
-	for c := 0; c < width; c++ {
-		cols[c] = make([]any, length)
-		copy(cols[c], df.Columns[c][elems[0][0]:elems[0][0]+length])
-	}
-
+	cols := df.Columns.Copy(elems...)
+	//cols := make(ColumnType, width)
+	//if len(elems) == 0 {
+	//cols = df.Columns.Copy()
 	return DataFrame{
 		Columns: cols,
 	}
+	//}
+	//length = Min(length, elems[0][1]-elems[0][0])
+	//
+	//for c := 0; c < width; c++ {
+	//	cols[c] = make([]any, length)
+	//	//copy(cols[c], df.Columns[c][elems[0][0]:elems[0][0]+length])
+	//}
+
+	//return DataFrame{
+	//	Columns: cols,
+	//}
 }
 
 func (df *DataFrame) Len() int {
-	if len(df.Columns) == 0 {
-		return 0
-	}
-	return len(df.Columns[0])
+	return df.Columns.Len()
 }
 
 func (df *DataFrame) Log(Columns []int) DataFrame {

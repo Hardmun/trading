@@ -25,20 +25,22 @@ func main() {
 	}
 
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
-	dfLogged := dataFrame.Log([]int{1, 2, 3, 4})
-
-	//length := dataFrame.Len()
-	//colCount := dataFrame.Columns.Count()
-	candleCount := 30
+	_ = dataFrame
+	//dfLogged := dataFrame.Log([]int{1, 2, 3, 4})
 	//
+	//candleCount := 30
+
 	//supportSlope := make([]float64, length)
 	//resistSlope := make([]float64, length)
 	//
-	candles := dfLogged.Copy([2]int{0, candleCount})
-	//for i := candleCount; i < candles.Len(); i++ {
-	//	newColumn := candles.Columns.Copy()
-	//
-	//}
+	//candles := dfLogged.Copy([2]int{0, candleCount})
+	//fmt.Println(candles)
 
-	fmt.Println(candles)
+	cols := make(df.ColumnType, 1)
+	cols[0][0] = make([]any, 5)
+	//for i := 0; i < 5; i++ {
+	//
+	//	//cols[0][i] = []any{1, 2, 3}
+	//}
+	fmt.Println(cols)
 }
