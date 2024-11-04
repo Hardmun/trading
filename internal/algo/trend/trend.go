@@ -29,12 +29,12 @@ func main() {
 
 	length := dataFrame.Len()
 	//colCount := dataFrame.Columns.Count()
-	lookback := 5
+	lookback := 30
 	//
 	supportSlope := make([]float64, length)
 	resistSlope := make([]float64, length)
 	//
-	candles := dfLogged.Copy([2]int{2, lookback})
+	candles := dfLogged.Copy([2]int{0, lookback})
 
 	fmt.Println(dfLogged, supportSlope, resistSlope, candles)
 }

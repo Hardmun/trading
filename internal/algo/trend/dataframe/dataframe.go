@@ -18,14 +18,14 @@ type loadOptions struct {
 	colTypes   []string
 }
 
-type Columns [][]any
+type ColumnType [][]any
 
-func (c Columns) Count() int {
+func (c ColumnType) Count() int {
 	return len(c)
 }
 
 type DataFrame struct {
-	Columns Columns
+	Columns ColumnType
 	err     error
 }
 
@@ -53,7 +53,7 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 	}
 
 	// Determining column width first; rows are greater than Columns
-	df.Columns = make([][]any, width)
+	df.Columns = make(ColumnType, width)
 	for c := 0; c < width; c++ {
 		df.Columns[c] = make([]any, length)
 	}
@@ -102,6 +102,7 @@ func Min[nm ~int | ~float64](numbers ...nm) nm {
 }
 
 func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
+	copyAll := len(elems) == 0
 	width := len(df.Columns)
 	if width == 0 {
 		return DataFrame{}
@@ -111,18 +112,21 @@ func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
 	if length == 0 {
 		return DataFrame{}
 	}
-	if len(elems) != 0 {
+	if !copyAll {
 		length = Min(length, elems[0][1]-elems[0][0])
 		startRow = elems[0][0]
 	}
 
-	cols := make([][]any, width)
+	cols := make(ColumnType, width)
 	for c := 0; c < width; c++ {
 		cols[c] = make([]any, length)
+		copy(cols[c], df.Columns[c])
 	}
-	for r := startRow; r < length+startRow; r++ {
-		for c := 0; c < width; c++ {
-			cols[c][r] = df.Columns[c][r]
+	if !copyAll {
+		for r, rNew := startRow, 0; r < length+startRow; r, rNew = r+1, rNew+1 {
+			for c := 0; c < width; c++ {
+				cols[c][rNew] = df.Columns[c][r]
+			}
 		}
 	}
 
@@ -140,7 +144,7 @@ func (df *DataFrame) Len() int {
 
 func (df *DataFrame) Log(Columns []int) DataFrame {
 	newDf := df.Copy()
-	for r := 0; r < len(newDf.Columns); r++ {
+	for r := 0; r < newDf.Len(); r++ {
 		for _, c := range Columns {
 			newDf.Columns[c][r] = math.Log(newDf.Columns[c][r].(float64))
 		}
