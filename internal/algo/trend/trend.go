@@ -2,9 +2,8 @@ package main
 
 import (
 	"fmt"
-	df "github.com/go-gota/gota/dataframe"
 	"os"
-	"trend/dataframe"
+	df "trend/dataframe"
 )
 
 func IsUptrend() bool {
@@ -13,20 +12,19 @@ func IsUptrend() bool {
 
 func main() {
 	read, _ := os.Open("./BTCUSDT86400.csv")
-	defer read.Close()
-	//bufio.NewReader(read)
+	defer func() {
+		_ = read.Close()
+	}()
 
-	//filer
-	//read, err := os.ReadFile("./BTCUSDT86400.csv")
-	//if err != nil {
-	//	fmt.Println(err)
-	//}
-	//
-	//io.re
+	colsType := []string{
+		"string",
+		"float64",
+		"float64",
+		"float64",
+		"float64",
+	}
 
-	data := dataframe.ReadCSV(read)
-	_ = data
-
-	data1 := df.ReadCSV(read, df.HasHeader(true))
-	fmt.Println(data1.Col("open"))
+	//lookback := 30
+	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
+	fmt.Println(dataFrame)
 }
