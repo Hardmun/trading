@@ -6,9 +6,9 @@ import (
 	df "trend/dataframe"
 )
 
-func IsUptrend() bool {
-	return true
-}
+//func IsUptrend() bool {
+//	return true
+//}
 
 func main() {
 	read, _ := os.Open("./BTCUSDT86400.csv")
@@ -27,14 +27,18 @@ func main() {
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
 	dfLogged := dataFrame.Log([]int{1, 2, 3, 4})
 
-	length := dataFrame.Len()
+	//length := dataFrame.Len()
 	//colCount := dataFrame.Columns.Count()
-	lookback := 30
+	candleCount := 30
 	//
-	supportSlope := make([]float64, length)
-	resistSlope := make([]float64, length)
+	//supportSlope := make([]float64, length)
+	//resistSlope := make([]float64, length)
 	//
-	candles := dfLogged.Copy([2]int{0, lookback})
+	candles := dfLogged.Copy([2]int{0, candleCount})
+	//for i := candleCount; i < candles.Len(); i++ {
+	//	newColumn := candles.Columns.Copy()
+	//
+	//}
 
-	fmt.Println(dfLogged, supportSlope, resistSlope, candles)
+	fmt.Println(candles)
 }

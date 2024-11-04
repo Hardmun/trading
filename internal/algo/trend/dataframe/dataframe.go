@@ -24,6 +24,13 @@ func (c ColumnType) Count() int {
 	return len(c)
 }
 
+func (c ColumnType) Copy() ColumnType {
+	cols := make(ColumnType, c.Count())
+	copy(cols, c)
+
+	return cols
+}
+
 type DataFrame struct {
 	Columns ColumnType
 	err     error
@@ -62,7 +69,7 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 			if cfg.colTypes != nil {
 				var err error
 				switch cfg.colTypes[c] {
-				case "int":
+				case "int64":
 					df.Columns[c][r], err = strconv.ParseInt(records[r][c], 10, 64)
 					if err != nil {
 						df.err = err
@@ -102,32 +109,27 @@ func Min[nm ~int | ~float64](numbers ...nm) nm {
 }
 
 func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
-	copyAll := len(elems) == 0
-	width := len(df.Columns)
+	width := df.Columns.Count()
 	if width == 0 {
 		return DataFrame{}
 	}
-	startRow := 0
-	length := len(df.Columns[0])
+	length := df.Len()
 	if length == 0 {
 		return DataFrame{}
 	}
-	if !copyAll {
-		length = Min(length, elems[0][1]-elems[0][0])
-		startRow = elems[0][0]
-	}
 
 	cols := make(ColumnType, width)
+	if len(elems) == 0 {
+		cols = df.Columns.Copy()
+		return DataFrame{
+			Columns: cols,
+		}
+	}
+	length = Min(length, elems[0][1]-elems[0][0])
+
 	for c := 0; c < width; c++ {
 		cols[c] = make([]any, length)
-		copy(cols[c], df.Columns[c])
-	}
-	if !copyAll {
-		for r, rNew := startRow, 0; r < length+startRow; r, rNew = r+1, rNew+1 {
-			for c := 0; c < width; c++ {
-				cols[c][rNew] = df.Columns[c][r]
-			}
-		}
+		copy(cols[c], df.Columns[c][elems[0][0]:elems[0][0]+length])
 	}
 
 	return DataFrame{
@@ -151,12 +153,6 @@ func (df *DataFrame) Log(Columns []int) DataFrame {
 	}
 
 	return newDf
-}
-
-func HasHeader(has bool) LoadOption {
-	return func(cfg *loadOptions) {
-		cfg.hasHeader = has
-	}
 }
 
 func ColsTypes(ct []string) LoadOption {
