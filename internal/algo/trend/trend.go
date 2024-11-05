@@ -34,16 +34,16 @@ func main() {
 	length := dfLogged.Len()
 	candleCount := 30
 
-	candles := dfLogged.Copy([2]int{0, candleCount})
+	candles := dfLogged.Copy(0, candleCount)
 	flowCandle = make(chan [4]float64, candleCount)
 	go defineTrend(candles)
 
 	var wg sync.WaitGroup
 	for i := candleCount; i < length; i++ {
 		wg.Add(1)
-		currentData := dfLogged.Columns.Copy([2]int{i, i + 1})
-		flowCandle <- [4]float64{float64(i), currentData[2].([]any)[0].(float64),
-			currentData[3].([]any)[0].(float64), currentData[4].([]any)[0].(float64)}
+		currentData := dfLogged.Columns.Copy(i, i+1)
+		flowCandle <- [4]float64{float64(i), currentData[0].([]float64)[0],
+			currentData[1].([]float64)[0], currentData[2].([]float64)[0]}
 		time.Sleep(time.Second * 2)
 	}
 	//wg.Wait()
@@ -56,13 +56,13 @@ func defineTrend(candles df.DataFrame) {
 	supportSlope := make([]float64, length)
 	//resistSlope := make([]float64, length)
 
-	candlesHeight := candles.Col(2)
-	candlesLow := candles.Col(3)
-	candlesClose := candles.Col(4)
+	//candlesHeight := candles.Col(0)
+	//candlesLow := candles.Col(1)
+	//candlesClose := candles.Col(2)
 
-	support, resist := trendLineHighLow(candles.Col(2).([]float64),
-		candles.Col(3).([]float64),
-		candles.Col(4).([]float64))
+	support, resist := trendLineHighLow(candles.Col(0).([]float64),
+		candles.Col(1).([]float64),
+		candles.Col(2).([]float64))
 
 	supportSlope[length-1] = support
 	supportSlope[length-1] = resist
@@ -75,7 +75,6 @@ func defineTrend(candles df.DataFrame) {
 
 		//supportSlope[int(flow[0])] =
 	}
-	_, _, _ = candlesHeight, candlesLow, candlesClose
 }
 
 func arange(length int) []float64 {

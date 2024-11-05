@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"io"
+	"math"
 	"strconv"
 )
 
@@ -27,10 +28,17 @@ func (c ColumnType) Len() int {
 	if len(c) == 0 {
 		return 0
 	}
-	return len(c[0].([]any))
+	switch v := c[0].(type) {
+	case []float64:
+		return len(v)
+	case []string:
+		return len(v)
+	}
+
+	return 0
 }
 
-func (c ColumnType) Copy(elems ...[2]int) ColumnType {
+func (c ColumnType) Copy(elems ...int) ColumnType {
 	width := c.Count()
 	cols := make(ColumnType, width)
 	if width == 0 {
@@ -40,16 +48,28 @@ func (c ColumnType) Copy(elems ...[2]int) ColumnType {
 	length := c.Len()
 	if len(elems) == 0 {
 		for n := 0; n < width; n++ {
-			cols[n] = make([]any, length)
-			copy(cols[n].([]any), c[n].([]any))
+			switch v := c[n].(type) {
+			case []float64:
+				cols[n] = make([]float64, length)
+				copy(cols[n].([]float64), v)
+			case []string:
+				cols[n] = make([]string, length)
+				copy(cols[n].([]string), v)
+			}
 		}
 		return cols
 	}
 
-	length = Min(length, elems[0][1]-elems[0][0])
+	length = Min(length, elems[1]-elems[0])
 	for n := 0; n < width; n++ {
-		cols[n] = make([]any, length)
-		copy(cols[n].([]any), c[n].([]any)[elems[0][0]:elems[0][0]+length])
+		switch v := c[n].(type) {
+		case []float64:
+			cols[n] = make([]float64, length)
+			copy(cols[n].([]float64), v[elems[0]:elems[0]+length])
+		case []string:
+			cols[n] = make([]string, length)
+			copy(cols[n].([]string), v[elems[0]:elems[0]+length])
+		}
 	}
 	return cols
 }
@@ -110,14 +130,17 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 	}
 }
 
-func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
+func (df *DataFrame) Copy(elems ...int) DataFrame {
 	width := df.Columns.Count()
+	newDf := DataFrame{}
 	if width == 0 {
-		return DataFrame{}
+		newDf.err = errors.New("table is empty")
+		return newDf
 	}
 	length := df.Len()
 	if length == 0 {
-		return DataFrame{}
+		newDf.err = errors.New("table is empty")
+		return newDf
 	}
 
 	cols := df.Columns.Copy(elems...)
@@ -182,9 +205,9 @@ func (df *DataFrame) Insert(row int, col int, val any) {
 }
 
 func (df *DataFrame) Log(cols ...int) DataFrame {
-	colCount := df.Columns.Count()
+	//colCount := df.Columns.Count()
 	newDf := DataFrame{
-		Columns: make(ColumnType, colCount),
+		Columns: make(ColumnType, len(cols)),
 	}
 	for k, c := range cols {
 		col := df.Col(c)
@@ -196,7 +219,7 @@ func (df *DataFrame) Log(cols ...int) DataFrame {
 		}
 		rowSlice := make([]float64, len(colFloat64))
 		for r, v := range colFloat64 {
-			rowSlice[r] = v
+			rowSlice[r] = math.Log(v)
 		}
 		newDf.Columns[k] = rowSlice
 	}
