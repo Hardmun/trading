@@ -264,11 +264,12 @@ func Max[nm ~int | ~float64](numbers ...nm) nm {
 }
 
 func Argmax(args ...float64) int {
-	if len(args) == 0 {
+	length := len(args)
+	if length == 0 {
 		return -1
 	}
 	mIdx := 0
-	for i := 1; i < len(args); i++ {
+	for i := 1; i < length; i++ {
 		if args[i] > args[mIdx] {
 			mIdx = i
 		}
@@ -289,10 +290,10 @@ func Argmin(args ...float64) int {
 	return mIdx
 }
 
-func Arange(length int) []float64 {
+func Arange(length int, f func(t float64, elems ...float64) float64, elems ...float64) []float64 {
 	slc := make([]float64, length)
-	for i := range slc {
-		slc[i] = float64(i)
+	for i := 0; i < length; i++ {
+		slc[i] = f(float64(i), elems...)
 	}
 
 	return slc
