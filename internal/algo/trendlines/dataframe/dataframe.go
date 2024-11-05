@@ -289,6 +289,15 @@ func Argmin(args ...float64) int {
 	return mIdx
 }
 
+func Arange(length int) []float64 {
+	slc := make([]float64, length)
+	for i := range slc {
+		slc[i] = float64(i)
+	}
+
+	return slc
+}
+
 //MATH FUNC************************************************************************************************
 
 func ColsTypes(ct []string) LoadOption {
