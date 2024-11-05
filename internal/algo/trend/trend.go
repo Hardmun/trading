@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"gonum.org/v1/gonum/stat"
 	"os"
 	"sync"
 	"time"
@@ -87,34 +88,31 @@ func arange(length int) []float64 {
 }
 
 func polyfit(x, y []float64, degree int) []float64 {
-	//n := len(x)
-	//if n != len(y) {
-	//	panic("x and y slices must have the same length")
-	//}
-	//
-	//// Create the Vandermonde matrix
-	//vandermonde := mat.NewDense(n, degree+1, nil)
-	//for i := 0; i < n; i++ {
-	//	for j := 0; j <= degree; j++ {
-	//		vandermonde.Set(i, j, floats.Pow(x[i], float64(j)))
-	//	}
-	//}
-	//
-	//// Perform least squares fitting
-	//var coeff mat.VecDense
-	//stat.Regression(&coeff, vandermonde, y, nil)
-	//
-	//return coeff.RawVector().Data
 
-	return []float64{}
+	return nil
 }
 
 func trendLineHighLow(high, low, close []float64) (float64, float64) {
 	x := arange(len(close))
-	//coefs := polyfit(x, close, 1)
-	//
-	//println(coefs)
+	a, b := stat.LinearRegression(x, close, nil, false)
+	for i := range x {
+		x[i] = float64(i)*b + a
+	}
+	for i := range high {
+		high[i] = high[i] - x[i]
+	}
+	for i := range low {
+		low[i] = low[i] - x[i]
+	}
+	upperPivot := df.Argmax(high...)
+	lowerPivot := df.Argmin(low...)
 
-	fmt.Println(x)
+	//support := optimizeSlope(true, lowerPivot, b, low)
+
+	fmt.Println(a, b, x, upperPivot, lowerPivot)
 	return 0, 0
+}
+
+func optimizeSlope(support bool, pivot int, intiSlope float64, y []float64) {
+
 }

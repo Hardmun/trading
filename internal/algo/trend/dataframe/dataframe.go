@@ -227,6 +227,8 @@ func (df *DataFrame) Log(cols ...int) DataFrame {
 	return newDf
 }
 
+//MATH FUNC************************************************************************************************
+
 func Min[nm ~int | ~float64](numbers ...nm) nm {
 	length := len(numbers)
 	if length == 0 {
@@ -243,6 +245,51 @@ func Min[nm ~int | ~float64](numbers ...nm) nm {
 	}
 	return minNum
 }
+
+func Max[nm ~int | ~float64](numbers ...nm) nm {
+	length := len(numbers)
+	if length == 0 {
+		return 0
+	}
+	if length == 1 {
+		return numbers[0]
+	}
+	maxNum := numbers[0]
+	for n := 1; n < length; n++ {
+		if numbers[n] > maxNum {
+			maxNum = numbers[n]
+		}
+	}
+	return maxNum
+}
+
+func Argmax(args ...float64) int {
+	if len(args) == 0 {
+		return -1
+	}
+	mIdx := 0
+	for i := 1; i < len(args); i++ {
+		if args[i] > args[mIdx] {
+			mIdx = i
+		}
+	}
+	return mIdx
+}
+
+func Argmin(args ...float64) int {
+	if len(args) == 0 {
+		return -1
+	}
+	mIdx := 0
+	for i := 1; i < len(args); i++ {
+		if args[i] < args[mIdx] {
+			mIdx = i
+		}
+	}
+	return mIdx
+}
+
+//MATH FUNC************************************************************************************************
 
 func ColsTypes(ct []string) LoadOption {
 	return func(cfg *loadOptions) {
