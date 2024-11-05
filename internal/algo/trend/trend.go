@@ -114,5 +114,5 @@ func trendLineHighLow(high, low, close []float64) (float64, float64) {
 }
 
 func optimizeSlope(support bool, pivot int, intiSlope float64, y []float64) {
-
+	//FINAL
 }
