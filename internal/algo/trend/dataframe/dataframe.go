@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"errors"
 	"io"
-	"math"
 	"strconv"
 )
 
@@ -18,7 +17,7 @@ type loadOptions struct {
 	colTypes   []string
 }
 
-type ColumnType [][]any
+type ColumnType []any
 
 func (c ColumnType) Count() int {
 	return len(c)
@@ -28,7 +27,7 @@ func (c ColumnType) Len() int {
 	if len(c) == 0 {
 		return 0
 	}
-	return len(c[0])
+	return len(c[0].([]any))
 }
 
 func (c ColumnType) Copy(elems ...[2]int) ColumnType {
@@ -38,11 +37,11 @@ func (c ColumnType) Copy(elems ...[2]int) ColumnType {
 		return cols
 	}
 
-	length := len(c[0])
+	length := c.Len()
 	if len(elems) == 0 {
 		for n := 0; n < width; n++ {
 			cols[n] = make([]any, length)
-			copy(cols[n], c[n])
+			copy(cols[n].([]any), c[n].([]any))
 		}
 		return cols
 	}
@@ -50,7 +49,7 @@ func (c ColumnType) Copy(elems ...[2]int) ColumnType {
 	length = Min(length, elems[0][1]-elems[0][0])
 	for n := 0; n < width; n++ {
 		cols[n] = make([]any, length)
-		copy(cols[n], c[n][elems[0][0]:elems[0][0]+length])
+		copy(cols[n].([]any), c[n].([]any)[elems[0][0]:elems[0][0]+length])
 	}
 	return cols
 }
@@ -86,30 +85,26 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 	// Determining column width first; rows are greater than Columns
 	df.Columns = make(ColumnType, width)
 	for c := 0; c < width; c++ {
-		df.Columns[c] = make([]any, length)
+		if cfg.colTypes != nil {
+			switch cfg.colTypes[c] {
+			case "float64":
+				df.Columns[c] = make([]float64, length)
+				continue
+			}
+		}
+		df.Columns[c] = make([]string, length)
 	}
 	for r := 0; r < length; r++ {
 		for c := 0; c < width; c++ {
 			if cfg.colTypes != nil {
-				var err error
 				switch cfg.colTypes[c] {
-				case "int64":
-					df.Columns[c][r], err = strconv.ParseInt(records[r][c], 10, 64)
-					if err != nil {
-						df.err = err
-						return
-					}
 				case "float64":
-					df.Columns[c][r], err = strconv.ParseFloat(records[r][c], 64)
-					if err != nil {
-						df.err = err
-						return
-					}
+					df.Insert(r, c, records[r][c])
 				default:
-					df.Columns[c][r] = records[r][c]
+					df.Insert(r, c, records[r][c])
 				}
 			} else {
-				df.Columns[c][r] = records[r][c]
+				df.Columns[c].([]any)[r] = records[r][c]
 			}
 		}
 	}
@@ -149,24 +144,72 @@ func (df *DataFrame) Len() int {
 	return df.Columns.Len()
 }
 
-func (df *DataFrame) Log(Columns []int) DataFrame {
-	newDf := df.Copy()
-	for r := 0; r < newDf.Len(); r++ {
-		for _, c := range Columns {
-			newDf.Columns[c][r] = math.Log(newDf.Columns[c][r].(float64))
-		}
+func (df *DataFrame) Col(num int) (any, error) {
+	if num > df.Columns.Count() {
+		return nil, errors.New("column index greater than columns count")
 	}
-
-	return newDf
+	return df.Columns[num], nil
 }
 
-func (df *DataFrame) Col(num int) []any {
-	if num > df.Columns.Count() {
-		df.err = errors.New("invalid column number")
-		return []any{}
+func (df *DataFrame) Insert(row int, col int, val any) {
+	switch c := df.Columns[col].(type) {
+	case []float64:
+		if v, ok := val.(float64); ok {
+			c[row] = v
+		} else {
+			if vs, oks := val.(string); oks {
+				var err error
+				v, err = strconv.ParseFloat(vs, 64)
+				if err != nil {
+					df.err = err
+					return
+				}
+				c[row] = v
+			} else {
+				df.err = errors.New("type not defined")
+			}
+		}
+	case []string:
+		if v, ok := val.(string); ok {
+			c[row] = v
+		} else {
+			df.err = errors.New("type not defined")
+		}
+	default:
+		df.err = errors.New("type not defined")
 	}
+}
 
-	return df.Columns[num]
+func (df *DataFrame) Log(cols ...int) DataFrame {
+	colCount := df.Columns.Count()
+	newDf := DataFrame{
+		Columns: make(ColumnType, colCount),
+	}
+	for k, c := range cols {
+		col, err := df.Col(c)
+		if err != nil {
+			newDf.err = err
+			return newDf
+		}
+		colFloat64, ok := col.([]float64)
+		if !ok {
+			newDf.err = errors.New("column type []float64 expected")
+			return newDf
+		}
+
+		var newSlice []float64
+		copy(newSlice, colFloat64)
+
+		newDf.Columns[k] = newSlice
+	}
+	//newDf := df.Copy()
+	//for r := 0; r < newDf.Len(); r++ {
+	//	for _, c := range Columns {
+	//		newDf.Columns[c].([]any)[r] = math.Log(newDf.Columns[c].([]any)[r].(float64))
+	//	}
+	//}
+	//
+	return newDf
 }
 
 func Min[nm ~int | ~float64](numbers ...nm) nm {

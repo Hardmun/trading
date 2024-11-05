@@ -29,7 +29,7 @@ func main() {
 	}
 
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
-	dfLogged := dataFrame.Log([]int{2, 3, 4})
+	dfLogged := dataFrame.Log(2, 3, 4)
 
 	length := dfLogged.Len()
 	candleCount := 30
@@ -42,8 +42,8 @@ func main() {
 	for i := candleCount; i < length; i++ {
 		wg.Add(1)
 		currentData := dfLogged.Columns.Copy([2]int{i, i + 1})
-		flowCandle <- [4]float64{float64(i), currentData[2][0].(float64),
-			currentData[3][0].(float64), currentData[4][0].(float64)}
+		flowCandle <- [4]float64{float64(i), currentData[2].([]any)[0].(float64),
+			currentData[3].([]any)[0].(float64), currentData[4].([]any)[0].(float64)}
 		time.Sleep(time.Second * 2)
 	}
 	//wg.Wait()
@@ -71,7 +71,7 @@ func defineTrend(candles df.DataFrame) {
 
 	for flow := range flowCandle {
 		_ = flow
-		//fmt.Println(flow)
+		fmt.Println(flow)
 
 		//supportSlope[int(flow[0])] =
 	}
