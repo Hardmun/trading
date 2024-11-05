@@ -115,23 +115,6 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 	}
 }
 
-func Min[nm ~int | ~float64](numbers ...nm) nm {
-	length := len(numbers)
-	if length == 0 {
-		return 0
-	}
-	if length == 1 {
-		return numbers[0]
-	}
-	minNum := numbers[0]
-	for n := 1; n < length; n++ {
-		if numbers[n] < minNum {
-			minNum = numbers[n]
-		}
-	}
-	return minNum
-}
-
 func (df *DataFrame) Copy(elems ...[2]int) DataFrame {
 	width := df.Columns.Count()
 	if width == 0 {
@@ -175,6 +158,32 @@ func (df *DataFrame) Log(Columns []int) DataFrame {
 	}
 
 	return newDf
+}
+
+func (df *DataFrame) Col(num int) []any {
+	if num > df.Columns.Count() {
+		df.err = errors.New("invalid column number")
+		return []any{}
+	}
+
+	return df.Columns[num]
+}
+
+func Min[nm ~int | ~float64](numbers ...nm) nm {
+	length := len(numbers)
+	if length == 0 {
+		return 0
+	}
+	if length == 1 {
+		return numbers[0]
+	}
+	minNum := numbers[0]
+	for n := 1; n < length; n++ {
+		if numbers[n] < minNum {
+			minNum = numbers[n]
+		}
+	}
+	return minNum
 }
 
 func ColsTypes(ct []string) LoadOption {
