@@ -60,9 +60,9 @@ func defineTrend(candles df.DataFrame) {
 	candlesLow := candles.Col(3)
 	candlesClose := candles.Col(4)
 
-	support, resist := trendLineHighLow(candles.Col(2),
-		candles.Col(3),
-		candles.Col(4))
+	support, resist := trendLineHighLow(candles.Col(2).([]float64),
+		candles.Col(3).([]float64),
+		candles.Col(4).([]float64))
 
 	supportSlope[length-1] = support
 	supportSlope[length-1] = resist
@@ -110,7 +110,7 @@ func polyfit(x, y []float64, degree int) []float64 {
 	return []float64{}
 }
 
-func trendLineHighLow(high, low, close []any) (float64, float64) {
+func trendLineHighLow(high, low, close []float64) (float64, float64) {
 	x := arange(len(close))
 	//coefs := polyfit(x, close, 1)
 	//
