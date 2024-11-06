@@ -31,15 +31,21 @@ func main() {
 	candles := dfMonth.Log(4)
 	trendLinesClosePrice(candles)
 
-	var candleVisual = make([]visual.Candle, length)
-	for r := 0; r < length; r++ {
+	testCandles := dfMonth.Copy()
+	var candleVisual = make([]visual.Candle, candleCount)
+	for r := 0; r < testCandles.Len(); r++ {
 		candleVisual[r] = visual.Candle{
-			Open:  0,
-			Close: 0,
-			High:  0,
-			Low:   0,
+			Open:  testCandles.Columns[1].([]float64)[r],
+			Close: testCandles.Columns[4].([]float64)[r],
+			High:  testCandles.Columns[2].([]float64)[r],
+			Low:   testCandles.Columns[3].([]float64)[r],
 		}
 	}
+
+	itm := visual.Items{
+		Candles: candleVisual,
+	}
+	visual.DrawGraph(itm)
 
 }
 
