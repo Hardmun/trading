@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	df "trendlines/dataframe"
+	"trendlines/visual"
 )
 
 func main() {
@@ -29,6 +30,17 @@ func main() {
 	dfMonth := dataFrame.Copy(length-candleCount, length)
 	candles := dfMonth.Log(4)
 	trendLinesClosePrice(candles)
+
+	var candleVisual = make([]visual.Candle, length)
+	for r := 0; r < length; r++ {
+		candleVisual[r] = visual.Candle{
+			Open:  0,
+			Close: 0,
+			High:  0,
+			Low:   0,
+		}
+	}
+
 }
 
 func fitTrendLinesClosePrice(candles []float64) ([2]float64, [2]float64) {

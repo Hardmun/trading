@@ -167,6 +167,29 @@ func (df *DataFrame) Len() int {
 	return df.Columns.Len()
 }
 
+func (df *DataFrame) Log(cols ...int) DataFrame {
+	//colCount := df.Columns.Count()
+	newDf := DataFrame{
+		Columns: make(ColumnType, len(cols)),
+	}
+	for k, c := range cols {
+		col := df.Col(c)
+
+		colFloat64, ok := col.([]float64)
+		if !ok {
+			newDf.err = errors.New("column type []float64 expected")
+			return newDf
+		}
+		rowSlice := make([]float64, len(colFloat64))
+		for r, v := range colFloat64 {
+			rowSlice[r] = math.Log(v)
+		}
+		newDf.Columns[k] = rowSlice
+	}
+
+	return newDf
+}
+
 func (df *DataFrame) Col(num int) any {
 	if num > df.Columns.Count() {
 		df.err = errors.New("column index greater than columns count")
@@ -204,27 +227,18 @@ func (df *DataFrame) Insert(row int, col int, val any) {
 	}
 }
 
-func (df *DataFrame) Log(cols ...int) DataFrame {
-	//colCount := df.Columns.Count()
-	newDf := DataFrame{
-		Columns: make(ColumnType, len(cols)),
+func (df *DataFrame) Get(row int, col int) any {
+	if df.Columns.Count() < col || df.Len() < row {
+		return nil
 	}
-	for k, c := range cols {
-		col := df.Col(c)
-
-		colFloat64, ok := col.([]float64)
-		if !ok {
-			newDf.err = errors.New("column type []float64 expected")
-			return newDf
-		}
-		rowSlice := make([]float64, len(colFloat64))
-		for r, v := range colFloat64 {
-			rowSlice[r] = math.Log(v)
-		}
-		newDf.Columns[k] = rowSlice
+	switch c := df.Columns[col].(type) {
+	case []float64:
+		return c[row]
+	case []string:
+		return c[row]
 	}
 
-	return newDf
+	return nil
 }
 
 //MATH FUNC************************************************************************************************
