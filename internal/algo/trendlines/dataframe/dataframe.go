@@ -38,15 +38,24 @@ func (c ColumnType) Len() int {
 	return 0
 }
 
-func (c ColumnType) Copy(elems ...int) ColumnType {
+func (c ColumnType) Copy(elems ...[]int) ColumnType {
+	var slctColumns []int
+	var cols ColumnType
 	width := c.Count()
-	cols := make(ColumnType, width)
+
+	if l := len(elems); (l > 1 && len(elems[1]) > width) || (l > 2) {
+		return cols
+	} else if l == 2 {
+		slctColumns = elems[1]
+		width = len(slctColumns)
+	}
+
 	if width == 0 {
 		return cols
 	}
-
+	cols = make(ColumnType, width)
 	length := c.Len()
-	if len(elems) == 0 {
+	if len(elems) == 0 || elems[0] == nil || len(elems[0]) != 2 {
 		for n := 0; n < width; n++ {
 			switch v := c[n].(type) {
 			case []float64:
@@ -60,17 +69,28 @@ func (c ColumnType) Copy(elems ...int) ColumnType {
 		return cols
 	}
 
-	length = Min(length, elems[1]-elems[0])
-	for n := 0; n < width; n++ {
+	length = Min(length, elems[0][1]-elems[0][0])
+	setRowsColsFunc := func(n int) {
 		switch v := c[n].(type) {
 		case []float64:
 			cols[n] = make([]float64, length)
-			copy(cols[n].([]float64), v[elems[0]:elems[0]+length])
+			copy(cols[n].([]float64), v[elems[0][0]:elems[0][0]+length])
 		case []string:
 			cols[n] = make([]string, length)
-			copy(cols[n].([]string), v[elems[0]:elems[0]+length])
+			copy(cols[n].([]string), v[elems[0][0]:elems[0][0]+length])
 		}
 	}
+
+	if len(slctColumns) > 0 {
+		for _, n := range slctColumns {
+			setRowsColsFunc(n)
+		}
+	} else {
+		for n := 0; n < width; n++ {
+			setRowsColsFunc(n)
+		}
+	}
+
 	return cols
 }
 
@@ -130,7 +150,13 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 	}
 }
 
-func (df *DataFrame) Copy(elems ...int) DataFrame {
+// Copy creates a DataFrame copy with specific indexes rows and columns
+//
+// Parameters (params ...int):
+//   - if len(params) = 0 		- copy the whole DataFrame
+//   - if len(params) = 1 	- only rows to select
+//   - if len(params) > 1 	- rows : [start, end], columns [1,3,5]
+func (df *DataFrame) Copy(elems ...[]int) DataFrame {
 	width := df.Columns.Count()
 	newDf := DataFrame{}
 	if width == 0 {
@@ -144,47 +170,38 @@ func (df *DataFrame) Copy(elems ...int) DataFrame {
 	}
 
 	cols := df.Columns.Copy(elems...)
-	//cols := make(ColumnType, width)
-	//if len(elems) == 0 {
-	//cols = df.Columns.Copy()
 	return DataFrame{
 		Columns: cols,
 	}
-	//}
-	//length = Min(length, elems[0][1]-elems[0][0])
-	//
-	//for c := 0; c < width; c++ {
-	//	cols[c] = make([]any, length)
-	//	//copy(cols[c], df.Columns[c][elems[0][0]:elems[0][0]+length])
-	//}
-
-	//return DataFrame{
-	//	Columns: cols,
-	//}
 }
 
 func (df *DataFrame) Len() int {
 	return df.Columns.Len()
 }
 
+// Log returns a DataFrame copy with logged columns
+//
+// Parameters:
+//   - column indexes
 func (df *DataFrame) Log(cols ...int) DataFrame {
-	//colCount := df.Columns.Count()
 	newDf := DataFrame{
 		Columns: make(ColumnType, len(cols)),
 	}
 	for k, c := range cols {
 		col := df.Col(c)
 
-		colFloat64, ok := col.([]float64)
-		if !ok {
-			newDf.err = errors.New("column type []float64 expected")
-			return newDf
+		switch colValue := col.(type) {
+		case []string:
+			rowSlice := make([]string, len(colValue))
+			copy(rowSlice, colValue)
+			newDf.Columns[k] = rowSlice
+		case []float64:
+			rowSlice := make([]float64, len(colValue))
+			for r, v := range colValue {
+				rowSlice[r] = math.Log(v)
+			}
+			newDf.Columns[k] = rowSlice
 		}
-		rowSlice := make([]float64, len(colFloat64))
-		for r, v := range colFloat64 {
-			rowSlice[r] = math.Log(v)
-		}
-		newDf.Columns[k] = rowSlice
 	}
 
 	return newDf

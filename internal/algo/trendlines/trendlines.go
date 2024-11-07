@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"gonum.org/v1/gonum/stat"
 	"math"
 	"os"
 	df "trendlines/dataframe"
-	"trendlines/visual"
 )
 
 func main() {
@@ -15,6 +13,7 @@ func main() {
 		_ = read.Close()
 	}()
 
+	//TODO: make with CONST
 	colsType := []string{
 		"string",
 		"float64",
@@ -27,25 +26,14 @@ func main() {
 	length := dataFrame.Len()
 	candleCount := 30
 
-	dfMonth := dataFrame.Copy(length-candleCount, length)
-	candles := dfMonth.Log(4)
-	trendLinesClosePrice(candles)
+	dfCurrent := dataFrame.Copy([]int{length - candleCount, length})
+	//TODO: rows and col as params
+	loggedTable := dfCurrent.Log(0, 1, 2, 3, 4)
 
-	testCandles := dfMonth.Copy()
-	var candleVisual = make([]visual.Candle, candleCount)
-	for r := 0; r < testCandles.Len(); r++ {
-		candleVisual[r] = visual.Candle{
-			Open:  testCandles.Columns[1].([]float64)[r],
-			Close: testCandles.Columns[4].([]float64)[r],
-			High:  testCandles.Columns[2].([]float64)[r],
-			Low:   testCandles.Columns[3].([]float64)[r],
-		}
-	}
+	//TODO:START HERE
+	cTable := loggedTable.Copy(nil, []int{4})
 
-	itm := visual.Items{
-		Candles: candleVisual,
-	}
-	visual.DrawGraph(itm)
+	trendLinesClosePrice(cTable)
 
 }
 
@@ -159,15 +147,35 @@ func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64
 	return calcErr
 }
 
+func getLinePoints(candles df.DataFrame, sCoff []float64) {
+
+}
+
 func trendLinesClosePrice(candles df.DataFrame) {
-	supCoff, resCoff := fitTrendLinesClosePrice(candles.Col(0).([]float64))
+	sCoff, rCoff := fitTrendLinesClosePrice(candles.Col(0).([]float64))
 
 	supportLine := df.Arange(candles.Len(), func(t float64, elems ...float64) float64 {
 		return t*elems[0] + elems[1]
-	}, supCoff[0], supCoff[1])
+	}, sCoff[0], sCoff[1])
 	resistLine := df.Arange(candles.Len(), func(t float64, elems ...float64) float64 {
 		return t*elems[0] + elems[1]
-	}, resCoff[0], resCoff[1])
+	}, rCoff[0], rCoff[1])
 
-	fmt.Println(supportLine, resistLine)
+	_, _ = supportLine, resistLine
+
+	//testCandles := dfMonth.Copy()
+	//var candleVisual = make([]visual.CandleType, candleCount)
+	//for r := 0; r < testCandles.Len(); r++ {
+	//	candleVisual[r] = visual.CandleType{
+	//		Open:  testCandles.Columns[1].([]float64)[r],
+	//		Close: testCandles.Columns[4].([]float64)[r],
+	//		High:  testCandles.Columns[2].([]float64)[r],
+	//		Low:   testCandles.Columns[3].([]float64)[r],
+	//	}
+	//}
+	//
+	//itm := visual.Items[[]visual.CandleType]{
+	//	Data: candleVisual,
+	//}
+	//visual.DrawGraph(itm)
 }

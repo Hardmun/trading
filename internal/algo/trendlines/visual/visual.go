@@ -7,27 +7,45 @@ import (
 	"image/color"
 )
 
-type Items struct {
-	Candles []Candle
-	//Lines     [][]f
-}
+type Plots string
 
-type Candle struct {
+const (
+	Line   Plots = "line"
+	Candle Plots = "Candle"
+)
+
+type CandleType struct {
 	Open, Close, High, Low float64
 }
 
-func DrawGraph(itm Items) {
-	p := plot.New()
-	p.Title.Text = "Candlestick Chart"
-	p.X.Label.Text = "Time"
-	p.Y.Label.Text = "Price"
+type Items[t []CandleType | []float64] struct {
+	Plot Plots
+	Data t
+}
 
-	for i, c := range itm.Candles {
+func DrawGraph(itm Items[[]CandleType]) {
+	p := plot.New()
+	p.BackgroundColor = color.RGBA{R: 195, G: 195, B: 195, A: 255}
+
+	p.Title.Text = "BTCUSDT"
+	//p.X.Label.Text = "Time"
+	//p.Y.Label.Text = "Price"
+
+	for i, c := range itm.Data {
 		highLowLine, _ := plotter.NewLine(plotter.XYs{{X: float64(i), Y: c.Low}, {X: float64(i), Y: c.High}})
-		highLowLine.Color = color.Black
+		if c.Close > c.Open {
+			highLowLine.Color = color.RGBA{R: 0, G: 200, B: 0, A: 255} // Green for up
+		} else {
+			highLowLine.Color = color.RGBA{R: 200, G: 0, B: 0, A: 255} // Red for down
+		}
+
 		p.Add(highLowLine)
 
 		body, err := plotter.NewBoxPlot(vg.Points(10), float64(i), plotter.Values{c.Open, c.Close})
+		body.BoxStyle.Color = color.Transparent
+		body.MedianStyle.Color = color.Transparent
+		body.WhiskerStyle.Color = color.Transparent
+
 		if err != nil {
 			//TODO:make log
 			panic(err)
@@ -39,5 +57,6 @@ func DrawGraph(itm Items) {
 		}
 		p.Add(body)
 	}
-	_ = p.Save(6*vg.Inch, 4*vg.Inch, "candles.png")
+	_ = p.Save(10*vg.Inch, 6*vg.Inch, "candles.png")
+
 }

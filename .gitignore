@@ -5,4 +5,5 @@
 /test/logs/
 /db/
 /test/db/
+*.png
 
