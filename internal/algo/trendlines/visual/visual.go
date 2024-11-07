@@ -19,8 +19,10 @@ type CandleType struct {
 }
 
 type Items[t []CandleType | []float64] struct {
-	Plot Plots
-	Data t
+	Plot    Plots
+	Data    t
+	LineSup []float64
+	LineRes []float64
 }
 
 func DrawGraph(itm Items[[]CandleType]) {
@@ -57,6 +59,18 @@ func DrawGraph(itm Items[[]CandleType]) {
 		}
 		p.Add(body)
 	}
+
+	ln := itm.LineRes
+	arr := make(plotter.XYs, len(ln))
+	for i := 0; i < len(ln); i++ {
+		arr[i] = plotter.XY{
+			X: float64(i),
+			Y: ln[i],
+		}
+	}
+	nL, _ := plotter.NewLine(arr)
+	p.Add(nL)
+
 	_ = p.Save(10*vg.Inch, 6*vg.Inch, "candles.png")
 
 }

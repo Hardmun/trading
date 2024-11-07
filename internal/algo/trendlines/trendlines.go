@@ -28,12 +28,9 @@ func main() {
 	candleCount := 30
 
 	loggedTable := dataFrame.Copy([]int{length - candleCount, length})
-	//TODO: rows and col as params
-	//TODO:START HERE
 	loggedTable.Log(0, 1, 2, 3, 4)
 
 	trendLinesClosePrice(loggedTable.Copy())
-
 }
 
 func fitTrendLinesClosePrice(candles []float64) ([2]float64, [2]float64) {
@@ -173,7 +170,9 @@ func trendLinesClosePrice(candles df.DataFrame) {
 	}
 
 	itm := visual.Items[[]visual.CandleType]{
-		Data: candleVisual,
+		Data:    candleVisual,
+		LineSup: supportLine,
+		LineRes: resistLine,
 	}
 	visual.DrawGraph(itm)
 }
