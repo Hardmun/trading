@@ -194,28 +194,20 @@ func (df *DataFrame) Len() int {
 //
 // Parameters:
 //   - column indexes
-func (df *DataFrame) Log(cols ...[]int) DataFrame {
-	newDf := DataFrame{
-		Columns: make(ColumnType, len(cols)),
+func (df *DataFrame) Log(cols ...int) {
+	if len(cols) == 0 {
+		return
 	}
-	for k, c := range cols {
+	length := df.Len()
+	for _, c := range cols {
 		col := df.Col(c)
-
 		switch colValue := col.(type) {
-		case []string:
-			rowSlice := make([]string, len(colValue))
-			copy(rowSlice, colValue)
-			newDf.Columns[k] = rowSlice
 		case []float64:
-			rowSlice := make([]float64, len(colValue))
-			for r, v := range colValue {
-				rowSlice[r] = math.Log(v)
+			for i := 0; i < length; i++ {
+				colValue[i] = math.Log(colValue[i])
 			}
-			newDf.Columns[k] = rowSlice
 		}
 	}
-
-	return newDf
 }
 
 func (df *DataFrame) Col(num int) any {

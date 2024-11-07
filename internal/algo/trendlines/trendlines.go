@@ -26,10 +26,10 @@ func main() {
 	length := dataFrame.Len()
 	candleCount := 30
 
-	dfCurrent := dataFrame.Copy([]int{length - candleCount, length})
+	loggedTable := dataFrame.Copy([]int{length - candleCount, length})
 	//TODO: rows and col as params
 	//TODO:START HERE
-	loggedTable := dfCurrent.Log([]int{length - candleCount, length}, []int{0, 1, 2, 3, 4})
+	loggedTable.Log(0, 1, 2, 3, 4)
 
 	cTable := loggedTable.Copy(nil, []int{4})
 
