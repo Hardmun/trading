@@ -25,7 +25,7 @@ func main() {
 
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
 	length := dataFrame.Len()
-	candleCount := 30
+	candleCount := 60
 
 	loggedTable := dataFrame.Copy([]int{length - candleCount, length})
 	loggedTable.Log(0, 1, 2, 3, 4)
@@ -34,16 +34,18 @@ func main() {
 }
 
 func fitTrendLinesClosePrice(candles []float64) ([2]float64, [2]float64) {
-	x := df.Arange(len(candles), func(t float64, elems ...float64) float64 {
+	length := len(candles)
+	x := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t
 	})
 	a, b := stat.LinearRegression(x, candles, nil, false)
-	for i := range x {
-		x[i] = float64(i)*b + a
+
+	for i := 0; i < length; i++ {
+		x[i] = candles[i] - float64(i)*b + a
 	}
 
-	upperPivot := df.Argmax(candles...)
-	lowerPivot := df.Argmin(candles...)
+	upperPivot := df.Argmax(x...)
+	lowerPivot := df.Argmin(x...)
 
 	supportCof := optimizeSlope(true, lowerPivot, b, candles)
 	resistCof := optimizeSlope(false, upperPivot, b, candles)
@@ -159,7 +161,7 @@ func trendLinesClosePrice(candles df.DataFrame) {
 
 	_, _ = supportLine, resistLine
 
-	var candleVisual = make([]visual.CandleType, 30)
+	var candleVisual = make([]visual.CandleType, 60)
 	for r := 0; r < candles.Len(); r++ {
 		candleVisual[r] = visual.CandleType{
 			Open:  candles.Columns[1].([]float64)[r],
