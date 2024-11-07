@@ -28,9 +28,9 @@ func main() {
 
 	dfCurrent := dataFrame.Copy([]int{length - candleCount, length})
 	//TODO: rows and col as params
-	loggedTable := dfCurrent.Log(0, 1, 2, 3, 4)
-
 	//TODO:START HERE
+	loggedTable := dfCurrent.Log([]int{length - candleCount, length}, []int{0, 1, 2, 3, 4})
+
 	cTable := loggedTable.Copy(nil, []int{4})
 
 	trendLinesClosePrice(cTable)

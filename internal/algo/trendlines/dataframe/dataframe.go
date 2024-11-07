@@ -55,7 +55,7 @@ func (c ColumnType) Copy(elems ...[]int) ColumnType {
 	}
 	cols = make(ColumnType, width)
 	length := c.Len()
-	if len(elems) == 0 || elems[0] == nil || len(elems[0]) != 2 {
+	if len(elems) == 0 {
 		for n := 0; n < width; n++ {
 			switch v := c[n].(type) {
 			case []float64:
@@ -69,25 +69,36 @@ func (c ColumnType) Copy(elems ...[]int) ColumnType {
 		return cols
 	}
 
-	length = Min(length, elems[0][1]-elems[0][0])
-	setRowsColsFunc := func(n int) {
+	if elems[0] != nil {
+		length = Min(length, elems[0][1]-elems[0][0])
+	}
+
+	setRowsColsFunc := func(i, n int) {
 		switch v := c[n].(type) {
 		case []float64:
-			cols[n] = make([]float64, length)
-			copy(cols[n].([]float64), v[elems[0][0]:elems[0][0]+length])
+			cols[i] = make([]float64, length)
+			if elems[0] != nil {
+				copy(cols[i].([]float64), v[elems[0][0]:elems[0][0]+length])
+			} else {
+				copy(cols[i].([]float64), v)
+			}
 		case []string:
-			cols[n] = make([]string, length)
-			copy(cols[n].([]string), v[elems[0][0]:elems[0][0]+length])
+			cols[i] = make([]string, length)
+			if elems[0] != nil {
+				copy(cols[i].([]string), v[elems[0][0]:elems[0][0]+length])
+			} else {
+				copy(cols[i].([]string), v)
+			}
 		}
 	}
 
 	if len(slctColumns) > 0 {
-		for _, n := range slctColumns {
-			setRowsColsFunc(n)
+		for i, n := range slctColumns {
+			setRowsColsFunc(i, n)
 		}
 	} else {
 		for n := 0; n < width; n++ {
-			setRowsColsFunc(n)
+			setRowsColsFunc(n, n)
 		}
 	}
 
@@ -153,9 +164,9 @@ func (df *DataFrame) LoadRecords(records [][]string, options ...LoadOption) {
 // Copy creates a DataFrame copy with specific indexes rows and columns
 //
 // Parameters (params ...int):
-//   - if len(params) = 0 		- copy the whole DataFrame
-//   - if len(params) = 1 	- only rows to select
-//   - if len(params) > 1 	- rows : [start, end], columns [1,3,5]
+//   - if len(params) = 0 	- copy the whole DataFrame
+//   - if len(params) = 1 	- only rows to select, rows : [start, end] - all columns
+//   - if len(params) > 1 	- rows : [start, end], columns [1,3,5] || rows : nil, columns [1,3,5] - all rows
 func (df *DataFrame) Copy(elems ...[]int) DataFrame {
 	width := df.Columns.Count()
 	newDf := DataFrame{}
@@ -183,7 +194,7 @@ func (df *DataFrame) Len() int {
 //
 // Parameters:
 //   - column indexes
-func (df *DataFrame) Log(cols ...int) DataFrame {
+func (df *DataFrame) Log(cols ...[]int) DataFrame {
 	newDf := DataFrame{
 		Columns: make(ColumnType, len(cols)),
 	}
