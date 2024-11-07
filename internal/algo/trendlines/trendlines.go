@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	df "trendlines/dataframe"
+	"trendlines/visual"
 )
 
 func main() {
@@ -31,9 +32,7 @@ func main() {
 	//TODO:START HERE
 	loggedTable.Log(0, 1, 2, 3, 4)
 
-	cTable := loggedTable.Copy(nil, []int{4})
-
-	trendLinesClosePrice(cTable)
+	trendLinesClosePrice(loggedTable.Copy())
 
 }
 
@@ -152,7 +151,7 @@ func getLinePoints(candles df.DataFrame, sCoff []float64) {
 }
 
 func trendLinesClosePrice(candles df.DataFrame) {
-	sCoff, rCoff := fitTrendLinesClosePrice(candles.Col(0).([]float64))
+	sCoff, rCoff := fitTrendLinesClosePrice(candles.Col(4).([]float64))
 
 	supportLine := df.Arange(candles.Len(), func(t float64, elems ...float64) float64 {
 		return t*elems[0] + elems[1]
@@ -163,19 +162,18 @@ func trendLinesClosePrice(candles df.DataFrame) {
 
 	_, _ = supportLine, resistLine
 
-	//testCandles := dfMonth.Copy()
-	//var candleVisual = make([]visual.CandleType, candleCount)
-	//for r := 0; r < testCandles.Len(); r++ {
-	//	candleVisual[r] = visual.CandleType{
-	//		Open:  testCandles.Columns[1].([]float64)[r],
-	//		Close: testCandles.Columns[4].([]float64)[r],
-	//		High:  testCandles.Columns[2].([]float64)[r],
-	//		Low:   testCandles.Columns[3].([]float64)[r],
-	//	}
-	//}
-	//
-	//itm := visual.Items[[]visual.CandleType]{
-	//	Data: candleVisual,
-	//}
-	//visual.DrawGraph(itm)
+	var candleVisual = make([]visual.CandleType, 30)
+	for r := 0; r < candles.Len(); r++ {
+		candleVisual[r] = visual.CandleType{
+			Open:  candles.Columns[1].([]float64)[r],
+			Close: candles.Columns[4].([]float64)[r],
+			High:  candles.Columns[2].([]float64)[r],
+			Low:   candles.Columns[3].([]float64)[r],
+		}
+	}
+
+	itm := visual.Items[[]visual.CandleType]{
+		Data: candleVisual,
+	}
+	visual.DrawGraph(itm)
 }
