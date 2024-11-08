@@ -25,7 +25,7 @@ func main() {
 
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
 	length := dataFrame.Len()
-	candleCount := 60
+	candleCount := 30
 
 	loggedTable := dataFrame.Copy([]int{length - candleCount, length})
 	loggedTable.Log(0, 1, 2, 3, 4)
@@ -33,7 +33,7 @@ func main() {
 	trendLinesClosePrice(loggedTable.Copy())
 }
 
-func fitTrendLinesClosePrice(candles []float64) ([2]float64, [2]float64) {
+func fitTrendLinesClosePrice(candles []float64) ([]float64, []float64) {
 	length := len(candles)
 	x := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t
@@ -50,7 +50,14 @@ func fitTrendLinesClosePrice(candles []float64) ([2]float64, [2]float64) {
 	supportCof := optimizeSlope(true, lowerPivot, b, candles)
 	resistCof := optimizeSlope(false, upperPivot, b, candles)
 
-	return supportCof, resistCof
+	supportLine := df.Arange(length, func(t float64, elems ...float64) float64 {
+		return t*elems[0] + elems[1]
+	}, supportCof[0], supportCof[1])
+	resistLine := df.Arange(length, func(t float64, elems ...float64) float64 {
+		return t*elems[0] + elems[1]
+	}, resistCof[0], resistCof[1])
+
+	return supportLine, resistLine
 }
 
 func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]float64 {
@@ -150,18 +157,9 @@ func getLinePoints(candles df.DataFrame, sCoff []float64) {
 }
 
 func trendLinesClosePrice(candles df.DataFrame) {
-	sCoff, rCoff := fitTrendLinesClosePrice(candles.Col(4).([]float64))
+	supportLine, resistLine := fitTrendLinesClosePrice(candles.Col(4).([]float64))
 
-	supportLine := df.Arange(candles.Len(), func(t float64, elems ...float64) float64 {
-		return t*elems[0] + elems[1]
-	}, sCoff[0], sCoff[1])
-	resistLine := df.Arange(candles.Len(), func(t float64, elems ...float64) float64 {
-		return t*elems[0] + elems[1]
-	}, rCoff[0], rCoff[1])
-
-	_, _ = supportLine, resistLine
-
-	var candleVisual = make([]visual.CandleType, 60)
+	var candleVisual = make([]visual.CandleType, candles.Len())
 	for r := 0; r < candles.Len(); r++ {
 		candleVisual[r] = visual.CandleType{
 			Open:  candles.Columns[1].([]float64)[r],
