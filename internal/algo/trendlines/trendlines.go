@@ -2,6 +2,7 @@ package main
 
 import (
 	"gonum.org/v1/gonum/stat"
+	"gonum.org/v1/plot/vg"
 	"math"
 	"os"
 	df "trendlines/dataframe"
@@ -71,7 +72,7 @@ func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]f
 	bestSlope := initSlope
 	bestErr := checkTrendLine(support, pivot, initSlope, y)
 	if bestErr < 0 {
-		//TODO: write logs instead panic
+		//TODO: write err logs
 		panic("bestErr must to be positive")
 	}
 
@@ -94,7 +95,7 @@ func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]f
 				derivative = bestErr - testErr
 			}
 			if testErr < 0 { // Derivative failed, give up
-				//TODO: make logs
+				//TODO: write err logs
 				panic("Derivative failed. Check your data. ")
 			}
 			getDerivative = false
@@ -152,27 +153,13 @@ func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64
 	return calcErr
 }
 
-func getLinePoints(candles df.DataFrame, sCoff []float64) {
-
-}
-
 func trendLinesClosePrice(candles df.DataFrame) {
 	supportLine, resistLine := fitTrendLinesClosePrice(candles.Col(4).([]float64))
+	_, _ = supportLine, resistLine
 
-	var candleVisual = make([]visual.CandleType, candles.Len())
-	for r := 0; r < candles.Len(); r++ {
-		candleVisual[r] = visual.CandleType{
-			Open:  candles.Columns[1].([]float64)[r],
-			Close: candles.Columns[4].([]float64)[r],
-			High:  candles.Columns[2].([]float64)[r],
-			Low:   candles.Columns[3].([]float64)[r],
-		}
-	}
-
-	itm := visual.Items[[]visual.CandleType]{
-		Data:    candleVisual,
-		LineSup: supportLine,
-		LineRes: resistLine,
-	}
-	visual.DrawGraph(itm)
+	graph := visual.NewPlot()
+	graph.DataFrame(candles, 1, 4, 2, 3)
+	graph.Lines(resistLine)
+	graph.Lines(supportLine)
+	_ = graph.Save(10*vg.Inch, 6*vg.Inch, "candles.png")
 }

@@ -5,72 +5,76 @@ import (
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
 	"image/color"
+	"trendlines/dataframe"
 )
 
-type Plots string
-
-const (
-	Line   Plots = "line"
-	Candle Plots = "Candle"
-)
-
-type CandleType struct {
-	Open, Close, High, Low float64
+type GraphPlot struct {
+	*plot.Plot
 }
 
-type Items[t []CandleType | []float64] struct {
-	Plot    Plots
-	Data    t
-	LineSup []float64
-	LineRes []float64
-}
+// DataFrame reads data from a dataframe and prepares it for plotting.
+//
+// Parameters:
+//   - df: the dataframe containing the data to plot
+//   - open: the index of the open price column
+//   - close: the index of the close price column
+//   - high: the index of the high price column
+//   - low: the index of the low price column
+func (g *GraphPlot) DataFrame(df dataframe.DataFrame, open, close, high, low int) {
+	length := df.Len()
+	for i := 0; i < length; i++ {
+		cOpen := df.Columns[open].([]float64)[i]
+		cClose := df.Columns[close].([]float64)[i]
+		cHigh := df.Columns[high].([]float64)[i]
+		cLow := df.Columns[low].([]float64)[i]
 
-func DrawGraph(itm Items[[]CandleType]) {
-	p := plot.New()
-	p.BackgroundColor = color.RGBA{R: 195, G: 195, B: 195, A: 255}
-
-	p.Title.Text = "BTCUSDT"
-	//p.X.Label.Text = "Time"
-	//p.Y.Label.Text = "Price"
-
-	for i, c := range itm.Data {
-		highLowLine, _ := plotter.NewLine(plotter.XYs{{X: float64(i), Y: c.Low}, {X: float64(i), Y: c.High}})
-		if c.Close > c.Open {
+		highLowLine, _ := plotter.NewLine(plotter.XYs{{X: float64(i), Y: cLow}, {X: float64(i), Y: cHigh}})
+		if cClose > cOpen {
 			highLowLine.Color = color.RGBA{R: 0, G: 200, B: 0, A: 255} // Green for up
 		} else {
 			highLowLine.Color = color.RGBA{R: 200, G: 0, B: 0, A: 255} // Red for down
 		}
 
-		p.Add(highLowLine)
+		g.Add(highLowLine)
 
-		body, err := plotter.NewBoxPlot(vg.Points(10), float64(i), plotter.Values{c.Open, c.Close})
+		body, err := plotter.NewBoxPlot(vg.Points(10), float64(i), plotter.Values{cOpen, cClose})
 		body.BoxStyle.Color = color.Transparent
 		body.MedianStyle.Color = color.Transparent
 		body.WhiskerStyle.Color = color.Transparent
 
 		if err != nil {
-			//TODO:make log
+			//TODO:write err logs
 			panic(err)
 		}
-		if c.Close > c.Open {
+		if cClose > cOpen {
 			body.FillColor = color.RGBA{R: 0, G: 200, B: 0, A: 255} // Green for up
 		} else {
 			body.FillColor = color.RGBA{R: 200, G: 0, B: 0, A: 255} // Red for down
 		}
-		p.Add(body)
+		g.Add(body)
 	}
+}
 
-	ln := itm.LineRes
-	arr := make(plotter.XYs, len(ln))
-	for i := 0; i < len(ln); i++ {
-		arr[i] = plotter.XY{
+func (g *GraphPlot) Lines(points []float64) {
+	length := len(points)
+	xys := make(plotter.XYs, length)
+	for i := 0; i < length; i++ {
+		xys[i] = plotter.XY{
 			X: float64(i),
-			Y: ln[i],
+			Y: points[i],
 		}
 	}
-	nL, _ := plotter.NewLine(arr)
-	p.Add(nL)
+	//TODO:write err logs
+	nL, _ := plotter.NewLine(xys)
+	g.Add(nL)
+}
 
-	_ = p.Save(10*vg.Inch, 6*vg.Inch, "candles.png")
+func NewPlot() *GraphPlot {
+	p := plot.New()
+	p.BackgroundColor = color.RGBA{R: 195, G: 195, B: 195, A: 255}
+	//p.Title.Text = "BTCUSDT"
+	//	//p.X.Label.Text = "Time"
+	//	//p.Y.Label.Text = "Price"
 
+	return &GraphPlot{p}
 }
