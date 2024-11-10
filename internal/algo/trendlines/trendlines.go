@@ -133,22 +133,22 @@ func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64
 	return calcErr
 }
 
-func fitTrendLinesClosePrice(candles, realCol []float64) ([]float64, []float64, []float64) {
+func fitTrendLinesClosePrice(candles []float64) ([]float64, []float64, []float64) {
 	length := len(candles)
 	x := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t
 	})
-	b, m := stat.LinearRegression(x, realCol, nil, false)
+	b, m := stat.LinearRegression(x, candles, nil, false)
 
 	for i := 0; i < length; i++ {
-		x[i] = realCol[i] - float64(i)*m + b
+		x[i] = candles[i] - float64(i)*m + b
 	}
 
 	upperPivot := df.Argmax(x...)
 	//lowerPivot := df.Argmin(x...)
 
 	//supportCof := optimizeSlope(true, lowerPivot, m, candles)
-	resistCof := optimizeSlope(false, upperPivot, m, realCol)
+	resistCof := optimizeSlope(false, upperPivot, m, candles)
 	supportCof := resistCof
 	supportLine := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t*supportCof[0] + supportCof[1]
@@ -169,7 +169,7 @@ func trendLinesClosePrice(candles df.DataFrame) {
 		realCol[i] = df.Max(candles.Columns[1].([]float64)[i], candles.Columns[4].([]float64)[i])
 	}
 
-	supportLine, resistLine, middle := fitTrendLinesClosePrice(realCol, realCol)
+	supportLine, resistLine, middle := fitTrendLinesClosePrice(realCol)
 	_, _ = supportLine, resistLine
 
 	graph := visual.NewPlot()
