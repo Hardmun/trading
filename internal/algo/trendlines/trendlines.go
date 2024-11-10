@@ -9,6 +9,8 @@ import (
 	"trendlines/visual"
 )
 
+var grph = visual.NewPlot()
+
 func main() {
 	read, _ := os.Open("./BTCUSDT86400.csv")
 	defer func() {
@@ -25,10 +27,10 @@ func main() {
 	}
 
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
-	length := dataFrame.Len()
-	candleCount := 30
+	//length := dataFrame.Len()
+	//candleCount := 30
 
-	loggedTable := dataFrame.Copy([]int{length - candleCount, length})
+	loggedTable := dataFrame.Copy([]int{120, 200})
 	//loggedTable.Log(0, 1, 2, 3, 4)
 
 	trendLinesClosePrice(loggedTable.Copy())
@@ -104,16 +106,11 @@ func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64
 	// Find the intercept of the line going through pivot point with given slope
 	length := len(y)
 	intercept := -slope*float64(pivot) + y[pivot]
-	lineVals := make([]float64, length)
+	//lineVals := make([]float64, length)
 	diffs := make([]float64, length)
 	for i := 0; i < length; i++ {
-		lineVals[i] = slope*float64(i) + intercept
-		if i == pivot+1 || i == pivot+2 || i == pivot-1 {
-			diffs[i] = 0
-		} else {
-			diffs[i] = lineVals[i] - y[i]
-		}
-
+		//lineVals[i] =
+		diffs[i] = slope*float64(i) + intercept - y[i]
 	}
 
 	//Check to see if the line is valid, return -1 if it is not valid.
@@ -133,49 +130,65 @@ func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64
 	return calcErr
 }
 
-func fitTrendLinesClosePrice(candles []float64) ([]float64, []float64, []float64) {
-	length := len(candles)
+func fitTrendLinesClosePrice(dataResist, dataSupport []float64) ([]float64, []float64) {
+	length := len(dataResist)
 	x := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t
 	})
-	b, m := stat.LinearRegression(x, candles, nil, false)
+	b, m := stat.LinearRegression(x, dataResist, nil, false)
+	bS, mS := stat.LinearRegression(x, dataSupport, nil, false)
+
+	xS := make([]float64, length)
+	copy(xS, x)
+	for i := 0; i < length; i++ {
+		x[i] = dataResist[i] - float64(i)*m + b
+	}
 
 	for i := 0; i < length; i++ {
-		x[i] = candles[i] - float64(i)*m + b
+		xS[i] = dataSupport[i] - float64(i)*mS + bS
 	}
 
 	upperPivot := df.Argmax(x...)
 	//lowerPivot := df.Argmin(x...)
+	//
+	//upperPivotS := df.Argmax(xS...)
+	lowerPivotS := df.Argmin(xS...)
 
-	//supportCof := optimizeSlope(true, lowerPivot, m, candles)
-	resistCof := optimizeSlope(false, upperPivot, m, candles)
-	supportCof := resistCof
+	supportCof := optimizeSlope(true, lowerPivotS, mS, dataSupport)
+	resistCof := optimizeSlope(false, upperPivot, m, dataResist)
+
 	supportLine := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t*supportCof[0] + supportCof[1]
 	})
 	resistLine := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t*resistCof[0] + resistCof[1]
 	})
-	middle := df.Arange(length, func(t float64, elems ...float64) float64 {
+
+	midle := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t*m + b
 	})
+	grph.Lines(midle)
 
-	return supportLine, resistLine, middle
+	return supportLine, resistLine
 }
 
 func trendLinesClosePrice(candles df.DataFrame) {
-	realCol := make([]float64, candles.Len())
+	realColResist := make([]float64, candles.Len())
 	for i := 0; i < candles.Len(); i++ {
-		realCol[i] = df.Max(candles.Columns[1].([]float64)[i], candles.Columns[4].([]float64)[i])
+		realColResist[i] = df.Max(candles.Columns[1].([]float64)[i], candles.Columns[4].([]float64)[i])
 	}
 
-	supportLine, resistLine, middle := fitTrendLinesClosePrice(realCol)
+	realColSupport := make([]float64, candles.Len())
+	for i := 0; i < candles.Len(); i++ {
+		realColSupport[i] = df.Min(candles.Columns[1].([]float64)[i], candles.Columns[4].([]float64)[i])
+	}
+
+	supportLine, resistLine := fitTrendLinesClosePrice(realColResist, realColSupport)
 	_, _ = supportLine, resistLine
 
-	graph := visual.NewPlot()
-	graph.DataFrame(candles, 1, 4, 2, 3)
-	graph.Lines(resistLine)
-	graph.Lines(middle)
-	graph.Lines(realCol)
-	_ = graph.Save(10*vg.Inch, 6*vg.Inch, "candles.png")
+	grph.DataFrame(candles, 1, 4, 2, 3)
+	grph.Lines(resistLine)
+	//graph.Lines(supportLine)
+	grph.Lines(realColResist)
+	_ = grph.Save(10*vg.Inch, 6*vg.Inch, "candles.png")
 }
