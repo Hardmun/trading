@@ -27,16 +27,16 @@ func main() {
 	}
 
 	dataFrame := df.ReadCSV(read, df.ColsTypes(colsType))
-	//length := dataFrame.Len()
-	//candleCount := 30
+	length := dataFrame.Len()
+	candleCount := 30
 
-	loggedTable := dataFrame.Copy([]int{120, 200})
+	loggedTable := dataFrame.Copy([]int{length - candleCount, length})
 	//loggedTable.Log(0, 1, 2, 3, 4)
 
 	trendLinesClosePrice(loggedTable.Copy())
 }
 
-func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]float64 {
+func optimizeSlope(support bool, pivot int, initSlope float64, y []float64, startIndex int) [2]float64 {
 	// Amount to change slope by multiply by optStep
 	slopeUnit := (df.Max(y...) - df.Min(y...)) / float64(len(y))
 	//Optimization variables
@@ -45,7 +45,7 @@ func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]f
 	currStep := optStep //current step
 	//Initiate at the slope of the line of best fit
 	bestSlope := initSlope
-	bestErr := checkTrendLine(support, pivot, initSlope, y)
+	bestErr := checkTrendLine(support, pivot, initSlope, y, startIndex)
 	if bestErr < 0 {
 		//TODO: write err logs
 		panic("bestErr must to be positive")
@@ -59,14 +59,14 @@ func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]f
 			// to see if error increases/decreases.
 			// Gives us the direction to change slope.
 			slopeChange := bestSlope + slopeUnit*minStep
-			testErr := checkTrendLine(support, pivot, slopeChange, y)
+			testErr := checkTrendLine(support, pivot, slopeChange, y, startIndex)
 			derivative = testErr - bestErr
 
 			//# If increasing by a small amount fails,
 			//# try decreasing by a small amount
 			if testErr < 0 {
 				slopeChange = bestSlope - slopeUnit*minStep
-				testErr = checkTrendLine(support, pivot, slopeChange, y)
+				testErr = checkTrendLine(support, pivot, slopeChange, y, startIndex)
 				derivative = bestErr - testErr
 			}
 			if testErr < 0 { // Derivative failed, give up
@@ -82,7 +82,7 @@ func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]f
 			testSlope = bestSlope + slopeUnit*currStep
 		}
 
-		testErr := checkTrendLine(support, pivot, testSlope, y)
+		testErr := checkTrendLine(support, pivot, testSlope, y, startIndex)
 		if testErr < 0 || testErr >= bestErr {
 			// slope failed/didn't reduce error
 			currStep *= 0.5 // Reduce step size
@@ -99,7 +99,7 @@ func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]f
 	return [2]float64{bestSlope, -bestSlope*float64(pivot) + y[pivot]}
 }
 
-func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64 {
+func checkTrendLine(support bool, pivot int, slope float64, y []float64, startIndex int) float64 {
 	// compute sum of differences between line and prices,
 	// return negative val if invalid
 
@@ -148,14 +148,15 @@ func fitTrendLinesClosePrice(dataResist, dataSupport []float64) ([]float64, []fl
 		xS[i] = dataSupport[i] - float64(i)*mS + bS
 	}
 
+	startIndex := df.Argmax(dataResist...)
 	upperPivot := df.Argmax(x...)
 	//lowerPivot := df.Argmin(x...)
 	//
 	//upperPivotS := df.Argmax(xS...)
 	lowerPivotS := df.Argmin(xS...)
 
-	supportCof := optimizeSlope(true, lowerPivotS, mS, dataSupport)
-	resistCof := optimizeSlope(false, upperPivot, m, dataResist)
+	supportCof := optimizeSlope(true, lowerPivotS, mS, dataSupport, startIndex)
+	resistCof := optimizeSlope(false, upperPivot, m, dataResist, startIndex)
 
 	supportLine := df.Arange(length, func(t float64, elems ...float64) float64 {
 		return t*supportCof[0] + supportCof[1]
