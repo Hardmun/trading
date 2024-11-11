@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"gonum.org/v1/gonum/stat"
 	"gonum.org/v1/plot/vg"
 	"math"
@@ -161,5 +162,8 @@ func trendLinesClosePrice(candles df.DataFrame) {
 	graph.DataFrame(candles, 1, 4, 2, 3)
 	graph.Lines(resistLine)
 	graph.Lines(supportLine)
-	_ = graph.Save(10*vg.Inch, 6*vg.Inch, "candles.png")
+	err := graph.Save(10*vg.Inch, 6*vg.Inch, "./candles.png")
+	if err != nil {
+		fmt.Println(err)
+	}
 }
