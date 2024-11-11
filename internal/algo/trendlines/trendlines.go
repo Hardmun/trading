@@ -34,31 +34,35 @@ func main() {
 	trendLinesClosePrice(loggedTable.Copy())
 }
 
-func fitTrendLinesClosePrice(candles []float64) ([]float64, []float64) {
-	length := len(candles)
-	x := df.Arange(length, func(t float64, elems ...float64) float64 {
-		return t
-	})
-	a, b := stat.LinearRegression(x, candles, nil, false)
+func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64 {
+	// compute sum of differences between line and prices,
+	// return negative val if invalid
 
+	// Find the intercept of the line going through pivot point with given slope
+	length := len(y)
+	intercept := -slope*float64(pivot) + y[pivot]
+	lineVals := make([]float64, length)
+	diffs := make([]float64, length)
 	for i := 0; i < length; i++ {
-		x[i] = candles[i] - float64(i)*b + a
+		lineVals[i] = slope*float64(i) + intercept
+		diffs[i] = lineVals[i] - y[i]
 	}
 
-	upperPivot := df.Argmax(x...)
-	lowerPivot := df.Argmin(x...)
+	//Check to see if the line is valid, return -1 if it is not valid.
+	if support && df.Max(diffs...) > 1e-5 {
+		return -1.0
+	}
+	if !support && df.Min(diffs...) < -1e-5 {
+		return -1.0
+	}
 
-	supportCof := optimizeSlope(true, lowerPivot, b, candles)
-	resistCof := optimizeSlope(false, upperPivot, b, candles)
+	// Squared sum of diffs between data and line
+	var calcErr float64
+	for _, v := range diffs {
+		calcErr += math.Pow(v, 2)
+	}
 
-	supportLine := df.Arange(length, func(t float64, elems ...float64) float64 {
-		return t*elems[0] + elems[1]
-	}, supportCof[0], supportCof[1])
-	resistLine := df.Arange(length, func(t float64, elems ...float64) float64 {
-		return t*elems[0] + elems[1]
-	}, resistCof[0], resistCof[1])
-
-	return supportLine, resistLine
+	return calcErr
 }
 
 func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]float64 {
@@ -122,35 +126,31 @@ func optimizeSlope(support bool, pivot int, initSlope float64, y []float64) [2]f
 	return [2]float64{bestSlope, -bestSlope*float64(pivot) + y[pivot]}
 }
 
-func checkTrendLine(support bool, pivot int, slope float64, y []float64) float64 {
-	// compute sum of differences between line and prices,
-	// return negative val if invalid
+func fitTrendLinesClosePrice(candles []float64) ([]float64, []float64) {
+	length := len(candles)
+	x := df.Arange(length, func(t float64, elems ...float64) float64 {
+		return t
+	})
+	a, b := stat.LinearRegression(x, candles, nil, false)
 
-	// Find the intercept of the line going through pivot point with given slope
-	length := len(y)
-	intercept := -slope*float64(pivot) + y[pivot]
-	lineVals := make([]float64, length)
-	diffs := make([]float64, length)
 	for i := 0; i < length; i++ {
-		lineVals[i] = slope*float64(i) + intercept
-		diffs[i] = lineVals[i] - y[i]
+		x[i] = candles[i] - float64(i)*b + a
 	}
 
-	//Check to see if the line is valid, return -1 if it is not valid.
-	if support && df.Max(diffs...) > 1e-5 {
-		return -1.0
-	}
-	if !support && df.Min(diffs...) < -1e-5 {
-		return -1.0
-	}
+	upperPivot := df.Argmax(x...)
+	lowerPivot := df.Argmin(x...)
 
-	// Squared sum of diffs between data and line
-	var calcErr float64
-	for _, v := range diffs {
-		calcErr += math.Pow(v, 2)
-	}
+	supportCof := optimizeSlope(true, lowerPivot, b, candles)
+	resistCof := optimizeSlope(false, upperPivot, b, candles)
 
-	return calcErr
+	supportLine := df.Arange(length, func(t float64, elems ...float64) float64 {
+		return t*elems[0] + elems[1]
+	}, supportCof[0], supportCof[1])
+	resistLine := df.Arange(length, func(t float64, elems ...float64) float64 {
+		return t*elems[0] + elems[1]
+	}, resistCof[0], resistCof[1])
+
+	return supportLine, resistLine
 }
 
 func trendLinesClosePrice(candles df.DataFrame) {
