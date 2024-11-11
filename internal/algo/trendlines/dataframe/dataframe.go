@@ -324,10 +324,10 @@ func Argmin(args ...float64) int {
 	return mIdx
 }
 
-func Arange(length int, f func(t float64, elems ...float64) float64, elems ...float64) []float64 {
+func Arange(length int, f func(t float64, elems ...float64) float64) []float64 {
 	slc := make([]float64, length)
 	for i := 0; i < length; i++ {
-		slc[i] = f(float64(i), elems...)
+		slc[i] = f(float64(i))
 	}
 
 	return slc

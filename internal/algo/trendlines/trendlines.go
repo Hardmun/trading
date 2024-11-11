@@ -144,11 +144,11 @@ func fitTrendLinesClosePrice(candles []float64) ([]float64, []float64) {
 	resistCof := optimizeSlope(false, upperPivot, b, candles)
 
 	supportLine := df.Arange(length, func(t float64, elems ...float64) float64 {
-		return t*elems[0] + elems[1]
-	}, supportCof[0], supportCof[1])
+		return t*supportCof[0] + supportCof[1]
+	})
 	resistLine := df.Arange(length, func(t float64, elems ...float64) float64 {
-		return t*elems[0] + elems[1]
-	}, resistCof[0], resistCof[1])
+		return t*resistCof[0] + resistCof[1]
+	})
 
 	return supportLine, resistLine
 }
