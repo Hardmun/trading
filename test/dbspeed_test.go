@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 	"time"
-	"trading/internal/config"
+	"trading/internal/conf"
 	"trading/internal/sqlite"
 	"trading/internal/utils"
 	"trading/pgk/queries"
@@ -79,7 +79,7 @@ func TestGroupWriting(t *testing.T) {
 			t.Error(err)
 		}
 
-		if n := config.Step*loopTestNumber - data.(int64); n > 0 {
+		if n := conf.Step*loopTestNumber - data.(int64); n > 0 {
 			t.Error(errors.New(fmt.Sprintf("Actuall numbers rows less than expected on %v", n)))
 		}
 
@@ -88,7 +88,7 @@ func TestGroupWriting(t *testing.T) {
 
 func BenchmarkSingleRowWriting(b *testing.B) {
 	startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli()
-	step := config.Step
+	step := conf.Step
 	_, err := sqlite.GetDb()
 	if err != nil {
 		b.Error(err)
@@ -108,7 +108,7 @@ func BenchmarkSingleRowWriting(b *testing.B) {
 func GetGroupedRecords() [][][]any {
 	var grp [][][]any
 	sec1 := int64(time.Second / time.Millisecond)
-	step := config.Step
+	step := conf.Step
 
 	startDate := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 	startTime := startDate.UnixMilli()
@@ -162,7 +162,7 @@ func SingleRowWriting(step int64, startDate int64) {
 func prepare(t any) {
 	var exeFunc = func() error {
 		var err error
-		config.Intervals = map[string]time.Duration{
+		conf.Intervals = map[conf.TimeFrame]time.Duration{
 			"1h": time.Hour,
 		}
 

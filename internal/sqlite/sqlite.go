@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 	"time"
-	"trading/internal/config"
+	"trading/internal/conf"
 	"trading/internal/utils"
 	"trading/pgk/queries"
 )
@@ -66,8 +66,8 @@ func UpdateDatabaseTables() error {
 	var finalQuery strings.Builder
 	singleQueryString := queries.CreateTables
 
-	for _, symbol := range config.Symbols {
-		for interval := range config.Intervals {
+	for _, symbol := range conf.Symbols {
+		for interval := range conf.Intervals {
 			finalQuery.WriteString(strings.Replace(singleQueryString, "&table",
 				fmt.Sprintf("%s_%s", symbol, interval), 1))
 		}
@@ -158,7 +158,7 @@ func FetchData(query string, params ...any) (any, error) {
 }
 
 func LastDate(tableName string) int64 {
-	minTime := config.DateStart.UnixMilli()
+	minTime := conf.DateStart.UnixMilli()
 	query := strings.Replace(queries.QueryLastDay, "&tableName", tableName, 1)
 
 	resultQuery, err := FetchData(query)

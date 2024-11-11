@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"trading/internal/config"
+	"trading/internal/conf"
 	"trading/internal/sqlite"
 	"trading/pgk/queries"
 )
@@ -35,7 +35,7 @@ func RequestKlineData(params KlineParams) error {
 	values.Add("startTime", strconv.FormatInt(params.TimeStart, 10))
 	values.Add("endTime", strconv.FormatInt(params.TimeEnd, 10))
 
-	baseURL := fmt.Sprintf("%s?%s", config.KlineURL, values.Encode())
+	baseURL := fmt.Sprintf("%s?%s", conf.KlineURL, values.Encode())
 
 	req, err = http.NewRequest(http.MethodGet, baseURL, nil)
 	if err != nil {

@@ -7,18 +7,18 @@ import (
 	"sync"
 	"time"
 	"trading/internal/api"
-	"trading/internal/config"
+	"trading/internal/conf"
 	"trading/internal/logs"
 	"trading/internal/sqlite"
 	"trading/internal/utils"
 )
 
-// UpdateTradingTablesData UpdateTradingTables UpdateTables updates the tables based on the provided update option.
+// UpdateTimeFrameData UpdateTradingTables UpdateTables updates the tables based on the provided update option.
 //
 //	 1  - Updates only non-existing final records.
 //	 0  - Updates all records.
 //	-1  - Updates only non-existing records for the entire period.
-func UpdateTradingTablesData(updateOption int8) {
+func UpdateTimeFrameData(updateOption int8, currTime time.Time) {
 	var wGrp sync.WaitGroup
 
 	limiter := utils.NewLimiter(time.Second, 50)
@@ -27,21 +27,28 @@ func UpdateTradingTablesData(updateOption int8) {
 
 	var lastDate int64
 	if updateOption != 1 {
-		lastDate = config.DateStart.UnixMilli()
+		lastDate = conf.DateStart.UnixMilli()
 	}
 
 lb:
-	for _, symbol := range config.Symbols {
-		for interval, timeInt := range config.Intervals {
-			currentTime := time.Now().UTC().Truncate(timeInt).UnixMilli()
-			step := int64(timeInt) / int64(time.Millisecond) * config.Step
+	for _, symbol := range conf.Symbols {
+		for interval, timeInt := range conf.Intervals {
+			currentTime := currTime.Truncate(timeInt).UnixMilli()
+			step := int64(timeInt) / int64(time.Millisecond) * conf.Step
 
 			if updateOption == 1 {
 				lastDate = sqlite.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
 			}
+			//TODO:remove after test
+			brk := 0
 			for timeStart, timeEnd := utils.Max64(currentTime-step, lastDate),
 				currentTime-int64(time.Nanosecond); timeEnd > lastDate; timeStart, timeEnd =
 				utils.Max64(timeStart-step, lastDate), timeEnd-step {
+
+				brk++
+				if brk > 1 {
+					break
+				}
 
 				if errMsg.HasError() {
 					break lb
@@ -53,7 +60,7 @@ lb:
 
 				klParams := api.KlineParams{
 					Symbol:    symbol,
-					Interval:  interval,
+					Interval:  interval.Str(),
 					TimeStart: timeStart,
 					TimeEnd:   timeEnd,
 				}
@@ -109,6 +116,7 @@ func main() {
 	//4. Background DB query receiver
 	go sqlite.BackgroundDBWriter()
 
+	currentTime := time.Now().UTC()
 	//5. Uploading new trading data
-	UpdateTradingTablesData(-1)
+	UpdateTimeFrameData(-1, currentTime)
 }
