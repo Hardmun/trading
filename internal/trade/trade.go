@@ -27,16 +27,8 @@ var Intervals = map[TimeFrame]time.Duration{
 	//"1d": time.Hour * 24,
 }
 
-type Symbol string
-
-const BTCUSDT Symbol = "BTCUSDT"
-
-func (s Symbol) Str() string {
-	return string(s)
-}
-
 var (
-	Symbols = []Symbol{
-		BTCUSDT,
+	Symbols = []string{
+		"BTCUSDT",
 	}
 )
