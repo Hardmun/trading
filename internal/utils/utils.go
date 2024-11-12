@@ -101,10 +101,3 @@ func DirPath(path ...string) (string, error) {
 	}
 	return pathDir, nil
 }
-
-func Max64(a, b int64) int64 {
-	if b > a {
-		return b
-	}
-	return a
-}

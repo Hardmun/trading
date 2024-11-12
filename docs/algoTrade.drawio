@@ -210,14 +210,11 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="-ntgnIRdm7O9jec5Gn3f-2" value="update SQL data&lt;br&gt;from last trans to time&lt;br&gt;start" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="315" y="140" width="120" height="60" as="geometry" />
-        </mxCell>
         <mxCell id="-ntgnIRdm7O9jec5Gn3f-5" value="current date - &lt;br&gt;df end date&lt;br&gt;&amp;gt; interval" style="html=1;whiteSpace=wrap;aspect=fixed;shape=isoRectangle;" vertex="1" parent="1">
           <mxGeometry x="300" y="310" width="150" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="-ntgnIRdm7O9jec5Gn3f-10" value="dataframe&lt;br&gt;start, end, interval" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
-          <mxGeometry x="315" y="220" width="120" height="60" as="geometry" />
+        <mxCell id="-ntgnIRdm7O9jec5Gn3f-10" value="global dataframe&lt;br&gt;start, end, interval" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="160" y="80" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

@@ -11,11 +11,12 @@ import (
 	"strings"
 	"trading/internal/conf"
 	"trading/internal/sqlite"
+	"trading/internal/trade"
 	"trading/pgk/queries"
 )
 
 type KlineParams struct {
-	Symbol    string
+	Symbol    trade.Symbol
 	Interval  string
 	TimeStart int64
 	TimeEnd   int64
@@ -30,7 +31,7 @@ func RequestKlineData(params KlineParams) error {
 	)
 
 	values := url.Values{}
-	values.Add("symbol", params.Symbol)
+	values.Add("symbol", params.Symbol.Str())
 	values.Add("interval", params.Interval)
 	values.Add("startTime", strconv.FormatInt(params.TimeStart, 10))
 	values.Add("endTime", strconv.FormatInt(params.TimeEnd, 10))

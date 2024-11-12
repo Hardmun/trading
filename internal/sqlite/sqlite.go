@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 	"trading/internal/conf"
+	"trading/internal/trade"
 	"trading/internal/utils"
 	"trading/pgk/queries"
 )
@@ -66,8 +67,8 @@ func UpdateDatabaseTables() error {
 	var finalQuery strings.Builder
 	singleQueryString := queries.CreateTables
 
-	for _, symbol := range conf.Symbols {
-		for interval := range conf.Intervals {
+	for _, symbol := range trade.Symbols {
+		for interval := range trade.Intervals {
 			finalQuery.WriteString(strings.Replace(singleQueryString, "&table",
 				fmt.Sprintf("%s_%s", symbol, interval), 1))
 		}

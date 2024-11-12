@@ -9,7 +9,9 @@ import (
 	"trading/internal/api"
 	"trading/internal/conf"
 	"trading/internal/logs"
+	"trading/internal/mth"
 	"trading/internal/sqlite"
+	"trading/internal/trade"
 	"trading/internal/utils"
 )
 
@@ -31,8 +33,8 @@ func UpdateTimeFrameData(updateOption int8, currTime time.Time) {
 	}
 
 lb:
-	for _, symbol := range conf.Symbols {
-		for interval, timeInt := range conf.Intervals {
+	for _, symbol := range trade.Symbols {
+		for interval, timeInt := range trade.Intervals {
 			currentTime := currTime.Truncate(timeInt).UnixMilli()
 			step := int64(timeInt) / int64(time.Millisecond) * conf.Step
 
@@ -41,12 +43,12 @@ lb:
 			}
 			//TODO:remove after test
 			brk := 0
-			for timeStart, timeEnd := utils.Max64(currentTime-step, lastDate),
+			for timeStart, timeEnd := mth.Max64(currentTime-step, lastDate),
 				currentTime-int64(time.Nanosecond); timeEnd > lastDate; timeStart, timeEnd =
-				utils.Max64(timeStart-step, lastDate), timeEnd-step {
+				mth.Max64(timeStart-step, lastDate), timeEnd-step {
 
 				brk++
-				if brk > 1 {
+				if brk > 10 {
 					break
 				}
 
