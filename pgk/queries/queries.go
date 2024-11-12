@@ -64,3 +64,9 @@ const QueryLastDay = `
 	SELECT
 	max(closetime)
 	FROM &tableName`
+
+// MINIMUM PERIOD FOR TABLE
+const QueryStartDay = `
+	SELECT
+	closetime
+	FROM &tableName`

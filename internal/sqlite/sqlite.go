@@ -146,7 +146,7 @@ func ExecQuery(query string, writeOption int8, params ...any) error {
 	return nil
 }
 
-func FetchData(query string, params ...any) (any, error) {
+func FetchSingleData(query string, params ...any) (any, error) {
 	row := db.QueryRow(query, params...)
 
 	var resp any
@@ -162,7 +162,7 @@ func LastDate(tableName string) int64 {
 	minTime := conf.DateStart.UnixMilli()
 	query := strings.Replace(queries.QueryLastDay, "&tableName", tableName, 1)
 
-	resultQuery, err := FetchData(query)
+	resultQuery, err := FetchSingleData(query)
 	if err == nil {
 		switch t := resultQuery.(type) {
 		case int64:
@@ -183,4 +183,26 @@ func BackgroundDBWriter() {
 			utils.GetErrorMessage().WriteError(err)
 		}
 	}
+}
+
+func CheckTradingData() error {
+	for _, s := range trade.Symbols {
+		for t := range trade.Intervals {
+			tableName := fmt.Sprintf("%s_%s", s, t)
+			query := strings.Replace(queries.QueryStartDay, "&tableName", tableName, 1)
+
+			resultQuery, err := FetchSingleData(query)
+			if err != nil {
+				return err
+			}
+
+			if r, ok := resultQuery.(int64); ok {
+				_ = r
+			}
+		}
+	}
+
+	//StartDate := sqlite.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
+
+	return nil
 }

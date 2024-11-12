@@ -15,12 +15,12 @@ import (
 	"trading/internal/utils"
 )
 
-// UpdateTimeFrameData UpdateTradingTables UpdateTables updates the tables based on the provided update option.
+// UpdateTradingData UpdateTradingTables UpdateTables updates the tables based on the provided update option.
 //
 //	 1  - Updates only non-existing final records.
 //	 0  - Updates all records.
 //	-1  - Updates only non-existing records for the entire period.
-func UpdateTimeFrameData(updateOption int8, currTime time.Time) {
+func UpdateTradingData(updateOption int8) {
 	var wGrp sync.WaitGroup
 
 	limiter := utils.NewLimiter(time.Second, 50)
@@ -35,7 +35,7 @@ func UpdateTimeFrameData(updateOption int8, currTime time.Time) {
 lb:
 	for _, symbol := range trade.Symbols {
 		for interval, timeInt := range trade.Intervals {
-			currentTime := currTime.Truncate(timeInt).UnixMilli()
+			currentTime := time.Now().UTC().Truncate(timeInt).UnixMilli()
 			step := int64(timeInt) / int64(time.Millisecond) * conf.Step
 
 			if updateOption == 1 {
@@ -118,7 +118,13 @@ func main() {
 	//4. Background DB query receiver
 	go sqlite.BackgroundDBWriter()
 
-	currentTime := time.Now().UTC()
 	//5. Uploading new trading data
-	UpdateTimeFrameData(-1, currentTime)
+	UpdateTradingData(-1)
+
+	//6. Ensure data wasn't lost
+	err = sqlite.CheckTradingData()
+	if err != nil {
+		errLog.Fatal(err)
+	}
+
 }
