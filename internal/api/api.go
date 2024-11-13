@@ -73,7 +73,6 @@ func RequestKlineData(params KlineParams) error {
 		}
 		return errors.New(fmt.Sprintf("code: %v\nmsg: %s\n", code, msg))
 	case []interface{}:
-		//var wg sync.WaitGroup
 		query := strings.Replace(queries.InsertTradingData, "&tableName",
 			fmt.Sprintf("%s_%s", params.Symbol, params.Interval), 1)
 
@@ -99,11 +98,6 @@ func RequestKlineData(params KlineParams) error {
 				return errors.New("unknown interface{} in func RequestKlineData(params KlineParams)")
 			}
 		}
-		//wg.Wait()
-		//err = sqlite.WriteKlineData(val, fmt.Sprintf("%s_%s", params.Symbol, params.Interval))
-		//if err != nil {
-		//	return err
-		//}
 	case interface{}:
 		return errors.New("unknown interface{}")
 	}
