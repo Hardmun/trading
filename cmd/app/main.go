@@ -109,7 +109,7 @@ func main() {
 		}
 	}()
 
-	//3. DB tables updates
+	//3. creates/updates db tables
 	err = sqlite.UpdateDatabaseTables()
 	if err != nil {
 		errLog.Fatal()

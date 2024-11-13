@@ -6,8 +6,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"trading/internal/conf"
+	"trading/internal/logs"
 	"trading/internal/trade"
 	"trading/internal/utils"
 	"trading/pgk/queries"
@@ -186,23 +188,41 @@ func BackgroundDBWriter() {
 }
 
 func CheckTradingData() error {
+	var wg sync.WaitGroup
+	var chErr := make(chan error, 1)
+
 	for _, s := range trade.Symbols {
 		for t := range trade.Intervals {
-			tableName := fmt.Sprintf("%s_%s", s, t)
-			query := strings.Replace(queries.QueryStartDay, "&tableName", tableName, 1)
+			wg.Add(1)
 
-			resultQuery, err := FetchSingleData(query)
-			if err != nil {
-				return err
-			}
-
-			if r, ok := resultQuery.(int64); ok {
-				_ = r
+			func() {
+				defer wg.Done()
+				tableName := fmt.Sprintf("%s_%s", s, t)
+				query := strings.Replace(queries.QueryStartDay, "&tableName", tableName, 1)
+				resultQuery, err := db.Query(query)
+				if err != nil {
+					select {
+					case chErr <- err:
+					}
+				}
+				defer func() {
+					err = resultQuery.Close()
+					if err != nil {
+						log, _ := logs.GetErrorLog()
+						log.Write(err)
+					}
+				}()
 			}
 		}
 	}
 
-	//StartDate := sqlite.LastDate(fmt.Sprintf("%s_%s", symbol, interval))
+	wg.Wait()
+	close(chErr)
 
-	return nil
+	select {
+	case err := <-chErr:
+		return err
+	default:
+		return nil
+	}
 }
