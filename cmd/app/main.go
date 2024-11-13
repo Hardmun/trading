@@ -17,9 +17,8 @@ import (
 
 // UpdateTradingData UpdateTradingTables UpdateTables updates the tables based on the provided update option.
 //
-//	 1  - Updates only non-existing final records.
-//	 0  - Updates all records.
-//	-1  - Updates only non-existing records for the entire period.
+//	1  - Updates only non-existing final records.
+//	0  - Updates all records.
 func UpdateTradingData(updateOption int8) {
 	var wGrp sync.WaitGroup
 
@@ -48,7 +47,7 @@ lb:
 				mth.Max64(timeStart-step, lastDate), timeEnd-step {
 
 				brk++
-				if brk > 10 {
+				if brk > 1 {
 					break
 				}
 
@@ -119,12 +118,11 @@ func main() {
 	go sqlite.BackgroundDBWriter()
 
 	//5. Uploading new trading data
-	UpdateTradingData(-1)
+	UpdateTradingData(1)
 
-	//6. Ensure data wasn't lost
+	//6. Ensure data exist according intervals
 	err = sqlite.CheckTradingData()
 	if err != nil {
 		errLog.Fatal(err)
 	}
-
 }

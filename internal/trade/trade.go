@@ -19,9 +19,13 @@ func (t TimeFrame) Str() string {
 	return string(t)
 }
 
+func (t TimeFrame) UnixMilli() int64 {
+	return int64(Intervals[t] / time.Millisecond)
+}
+
 var Intervals = map[TimeFrame]time.Duration{
 	Time_1m: time.Minute,
-	//Time_5m:  time.Minute * 5,
+	//Time_5m: time.Minute * 5,
 	//Time_15m: time.Minute * 15,
 	//Time_1h: time.Hour,
 	//"1d": time.Hour * 24,

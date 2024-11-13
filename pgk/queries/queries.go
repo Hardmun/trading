@@ -68,5 +68,5 @@ const QueryLastDay = `
 // MINIMUM PERIOD FOR TABLE
 const QueryStartDay = `
 	SELECT
-	closetime
+	opentime
 	FROM &tableName`

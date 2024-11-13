@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
@@ -189,30 +190,51 @@ func BackgroundDBWriter() {
 
 func CheckTradingData() error {
 	var wg sync.WaitGroup
-	var chErr := make(chan error, 1)
+	var chErr = make(chan error, 1)
+	var sendErr = func(e error) {
+		select {
+		case chErr <- e:
+		default:
+		}
+	}
 
 	for _, s := range trade.Symbols {
 		for t := range trade.Intervals {
 			wg.Add(1)
+			intLx := t.UnixMilli()
 
 			func() {
 				defer wg.Done()
 				tableName := fmt.Sprintf("%s_%s", s, t)
 				query := strings.Replace(queries.QueryStartDay, "&tableName", tableName, 1)
-				resultQuery, err := db.Query(query)
+				rows, err := db.Query(query)
 				if err != nil {
-					select {
-					case chErr <- err:
-					}
+					sendErr(err)
+					return
 				}
 				defer func() {
-					err = resultQuery.Close()
+					err = rows.Close()
 					if err != nil {
 						log, _ := logs.GetErrorLog()
 						log.Write(err)
 					}
 				}()
-			}
+
+				var nextOpenTime int64
+				for rows.Next() {
+					var openTime int64
+					err = rows.Scan(&openTime)
+					if err != nil {
+						sendErr(err)
+					}
+					if nextOpenTime != 0 && nextOpenTime != openTime {
+						sendErr(errors.New(fmt.Sprintf("miss opentime-%v for %s interval: %s\n"+
+							"previous opentime: %v", nextOpenTime, s, t, nextOpenTime-intLx)))
+						return
+					}
+					nextOpenTime = openTime + intLx
+				}
+			}()
 		}
 	}
 
