@@ -79,7 +79,6 @@ lb:
 		}
 	}
 	wGrp.Wait()
-	errMsg.Close()
 	close(routineLimiter)
 
 	if err := errMsg.GetError(); err != nil {
@@ -121,7 +120,7 @@ func main() {
 	UpdateTradingData(1)
 
 	//6. Ensure data exist according intervals
-	err = sqlite.CheckTradingData()
+	err = sqlite.CheckTradingData(UpdateTradingData)
 	if err != nil {
 		errLog.Fatal(err)
 	}
