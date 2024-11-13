@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"sync"
 	"time"
 	"trading/internal/api"
@@ -19,12 +18,12 @@ import (
 //
 //	1  - Updates only non-existing final records.
 //	0  - Updates all records.
-func UpdateTradingData(updateOption int8) {
+func UpdateTradingData(updateOption int8) error {
 	var wGrp sync.WaitGroup
 
 	limiter := utils.NewLimiter(time.Second, 50)
 	routineLimiter := make(chan struct{}, 100)
-	errMsg := utils.GetErrorMessage()
+	errMsg := utils.NewErrorMessage()
 
 	var lastDate int64
 	if updateOption != 1 {
@@ -79,12 +78,14 @@ lb:
 		}
 	}
 	wGrp.Wait()
-	close(routineLimiter)
 
 	if err := errMsg.GetError(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
+		//fmt.Println(err)
+		//os.Exit(1)
 	}
+
+	return nil
 }
 
 func main() {
@@ -117,7 +118,10 @@ func main() {
 	go sqlite.BackgroundDBWriter()
 
 	//5. Uploading new trading data
-	UpdateTradingData(1)
+	err = UpdateTradingData(1)
+	if err != nil {
+		errLog.Fatal(err)
+	}
 
 	//6. Ensure data exist according intervals
 	err = sqlite.CheckTradingData(UpdateTradingData)

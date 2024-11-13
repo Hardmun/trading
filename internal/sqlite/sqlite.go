@@ -188,7 +188,7 @@ func BackgroundDBWriter() {
 	}
 }
 
-func CheckTradingData(f func(i int8)) error {
+func CheckTradingData(f func(i int8) error) error {
 	var wg sync.WaitGroup
 	var chErr = make(chan error, 1)
 	var sendErr = func(e error) {
@@ -242,11 +242,14 @@ func CheckTradingData(f func(i int8)) error {
 	select {
 	case err := <-chErr:
 		if strings.HasPrefix(err.Error(), "miss opentime") && f != nil {
-			f(0)
+			if er := f(0); er != nil {
+				return er
+			}
 			return CheckTradingData(nil)
 		}
 		return err
 	default:
-		return nil
 	}
+
+	return nil
 }
