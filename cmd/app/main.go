@@ -81,8 +81,6 @@ lb:
 
 	if err := errMsg.GetError(); err != nil {
 		return err
-		//fmt.Println(err)
-		//os.Exit(1)
 	}
 
 	return nil
