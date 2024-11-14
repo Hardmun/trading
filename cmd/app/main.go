@@ -23,7 +23,7 @@ func UpdateTradingData(updateOption int8) error {
 
 	limiter := utils.NewLimiter(time.Second, 50)
 	routineLimiter := make(chan struct{}, 100)
-	errMsg := utils.NewErrorMessage()
+	errMsg := utils.GetErrorMessage()
 
 	var lastDate int64
 	if updateOption != 1 {
