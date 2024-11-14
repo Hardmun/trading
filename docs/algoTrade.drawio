@@ -202,7 +202,7 @@
         <mxCell id="bbGEWW3VloEjQ6Z225Au-6" value="Data frame update" style="swimlane;" parent="1" vertex="1">
           <mxGeometry x="480" y="300" width="180" height="105" as="geometry" />
         </mxCell>
-        <mxCell id="b_AIDq707I4X73p6_YX2-4" value="pattern&lt;br&gt;time frame&lt;br&gt;&lt;div&gt;dataframes&lt;br&gt;&lt;br&gt;-&amp;gt;web socket data&lt;br&gt;-&amp;gt;time frame data (change frame and var endDate&lt;br&gt;&lt;br&gt;WAIT if web time &amp;gt; endDate + interval&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="b_AIDq707I4X73p6_YX2-4" value="pattern&lt;br&gt;time frame&lt;br&gt;&lt;div&gt;dataframes&lt;br&gt;&lt;br&gt;chan dataframe&lt;br&gt;chan websocket&lt;br&gt;&lt;br&gt;-&amp;gt;web socket data&lt;br&gt;-&amp;gt;time frame data (change frame and var endDate&lt;br&gt;&lt;br&gt;WAIT if web time &amp;gt; endDate + interval&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="235" y="670" width="135" height="170" as="geometry" />
         </mxCell>
         <mxCell id="VWgBKBeKMZXEP8DVJnvB-1" value="SQL" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
@@ -222,9 +222,6 @@
         </mxCell>
         <mxCell id="ZqSFhP7OPR3CMu45oC8C-4" value="59" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
           <mxGeometry x="660" y="568" width="40" height="30" as="geometry" />
-        </mxCell>
-        <mxCell id="ZqSFhP7OPR3CMu45oC8C-5" value="ckecking" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
-          <mxGeometry x="355" y="628" width="70" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
